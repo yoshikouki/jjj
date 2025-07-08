@@ -17,7 +17,9 @@ export default function App() {
 	const [error, setError] = useState<string | null>(null);
 	const [preview, setPreview] = useState<string | null>(null);
 	const [showPreview, setShowPreview] = useState(false);
-	const [terminalWidth, setTerminalWidth] = useState(process.stdout.columns || 80);
+	const [terminalWidth, setTerminalWidth] = useState(
+		process.stdout.columns || 80,
+	);
 	const { exit } = useApp();
 
 	// ターミナルサイズの監視
@@ -180,8 +182,11 @@ export default function App() {
 							backgroundColor={selectedIndex === index ? "gray" : undefined}
 						>
 							{selectedIndex === index ? "▶ " : "  "}
-							{file.isDirectory ? "📁" : "📄"} {truncateFileName(file.name, terminalWidth)}
-							{!file.isDirectory && terminalWidth > 60 && ` (${formatFileSize(file.size)})`}
+							{file.isDirectory ? "📁" : "📄"}{" "}
+							{truncateFileName(file.name, terminalWidth)}
+							{!file.isDirectory &&
+								terminalWidth > 60 &&
+								` (${formatFileSize(file.size)})`}
 						</Text>
 					</Box>
 				))}
