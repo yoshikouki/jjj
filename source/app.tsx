@@ -17,7 +17,20 @@ export default function App() {
 	const [error, setError] = useState<string | null>(null);
 	const [preview, setPreview] = useState<string | null>(null);
 	const [showPreview, setShowPreview] = useState(false);
+	const [terminalWidth, setTerminalWidth] = useState(process.stdout.columns || 80);
 	const { exit } = useApp();
+
+	// ターミナルサイズの監視
+	useEffect(() => {
+		const handleResize = () => {
+			setTerminalWidth(process.stdout.columns || 80);
+		};
+
+		process.stdout.on("resize", handleResize);
+		return () => {
+			process.stdout.off("resize", handleResize);
+		};
+	}, []);
 
 	// ファイル一覧を読み込む
 	useEffect(() => {
@@ -132,11 +145,7 @@ export default function App() {
 						📄 プレビュー: {files[selectedIndex]?.name}
 					</Text>
 				</Box>
-				<Box
-					borderStyle="single"
-					padding={1}
-					flexDirection="column"
-				>
+				<Box borderStyle="single" padding={1} flexDirection="column">
 					<Text>{preview}</Text>
 				</Box>
 				<Box marginTop={1}>
@@ -151,7 +160,7 @@ export default function App() {
 			{/* ヘッダー */}
 			<Box marginBottom={1}>
 				<Text bold color="cyan">
-					📁 {currentPath}
+					📁 {truncateFileName(currentPath, terminalWidth - 2)}
 				</Text>
 			</Box>
 
@@ -171,8 +180,8 @@ export default function App() {
 							backgroundColor={selectedIndex === index ? "gray" : undefined}
 						>
 							{selectedIndex === index ? "▶ " : "  "}
-							{file.isDirectory ? "📁" : "📄"} {file.name}
-							{!file.isDirectory && ` (${formatFileSize(file.size)})`}
+							{file.isDirectory ? "📁" : "📄"} {truncateFileName(file.name, terminalWidth)}
+							{!file.isDirectory && terminalWidth > 60 && ` (${formatFileSize(file.size)})`}
 						</Text>
 					</Box>
 				))}
@@ -181,7 +190,9 @@ export default function App() {
 			{/* フッター */}
 			<Box marginTop={1}>
 				<Text dimColor>
-					↑↓: Navigate | Enter: Open | Space/p: Preview | q: Quit
+					{terminalWidth > 50
+						? "↑↓: Navigate | Enter: Open | Space/p: Preview | q: Quit"
+						: "↑↓ Enter Space q"}
 				</Text>
 			</Box>
 		</Box>
@@ -195,4 +206,26 @@ function formatFileSize(bytes: number): string {
 	const sizes = ["B", "KB", "MB", "GB"];
 	const i = Math.floor(Math.log(bytes) / Math.log(k));
 	return `${Number.parseFloat((bytes / k ** i).toFixed(1))} ${sizes[i]}`;
+}
+
+// ファイル名を幅に応じて省略
+function truncateFileName(name: string, terminalWidth: number): string {
+	// アイコンとインデント分を引いた利用可能幅
+	const availableWidth = Math.max(20, terminalWidth - 25);
+
+	if (name.length <= availableWidth) {
+		return name;
+	}
+
+	// 拡張子を保持
+	const ext = path.extname(name);
+	const baseName = path.basename(name, ext);
+	const maxBaseLength = availableWidth - ext.length - 3; // "..."の分
+
+	if (maxBaseLength < 5) {
+		// 非常に狭い場合
+		return `${name.slice(0, availableWidth - 3)}...`;
+	}
+
+	return `${baseName.slice(0, maxBaseLength)}...${ext}`;
 }
