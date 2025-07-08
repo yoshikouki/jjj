@@ -15,6 +15,8 @@ export default function App() {
 	const [files, setFiles] = useState<FileItem[]>([]);
 	const [selectedIndex, setSelectedIndex] = useState(0);
 	const [error, setError] = useState<string | null>(null);
+	const [preview, setPreview] = useState<string | null>(null);
+	const [showPreview, setShowPreview] = useState(false);
 	const { exit } = useApp();
 
 	// ファイル一覧を読み込む
@@ -61,21 +63,55 @@ export default function App() {
 		}
 	}, [currentPath]);
 
+	// ファイルプレビューを読み込む
+	const loadPreview = (filePath: string) => {
+		try {
+			const stats = fs.statSync(filePath);
+			if (stats.size > 1024 * 1024) {
+				// 1MB以上のファイルは読み込まない
+				setPreview("ファイルが大きすぎます (> 1MB)");
+				return;
+			}
+
+			const content = fs.readFileSync(filePath, "utf-8");
+			const lines = content.split("\n").slice(0, 10); // 最初の10行だけ表示
+			setPreview(lines.join("\n"));
+		} catch (err) {
+			setPreview(`プレビューできません: ${err}`);
+		}
+	};
+
 	// キーボード入力処理
 	useInput((input, key) => {
 		if (input === "q") {
 			exit();
 		}
 
-		if (key.upArrow) {
+		if (key.escape && showPreview) {
+			setShowPreview(false);
+			setPreview(null);
+			return;
+		}
+
+		if (key.upArrow && !showPreview) {
 			setSelectedIndex((prev) => Math.max(0, prev - 1));
 		}
 
-		if (key.downArrow) {
+		if (key.downArrow && !showPreview) {
 			setSelectedIndex((prev) => Math.min(files.length - 1, prev + 1));
 		}
 
-		if (key.return) {
+		if (input === " " || input === "p") {
+			// スペースまたはpでプレビュー
+			const selected = files[selectedIndex];
+			if (selected && !selected.isDirectory) {
+				const filePath = path.join(currentPath, selected.name);
+				loadPreview(filePath);
+				setShowPreview(true);
+			}
+		}
+
+		if (key.return && !showPreview) {
 			const selected = files[selectedIndex];
 			if (selected?.isDirectory) {
 				if (selected.name === "..") {
@@ -86,6 +122,29 @@ export default function App() {
 			}
 		}
 	});
+
+	if (showPreview && preview) {
+		// プレビュー画面
+		return (
+			<Box flexDirection="column">
+				<Box marginBottom={1}>
+					<Text bold color="yellow">
+						📄 プレビュー: {files[selectedIndex]?.name}
+					</Text>
+				</Box>
+				<Box
+					borderStyle="single"
+					padding={1}
+					flexDirection="column"
+				>
+					<Text>{preview}</Text>
+				</Box>
+				<Box marginTop={1}>
+					<Text dimColor>ESC: 戻る</Text>
+				</Box>
+			</Box>
+		);
+	}
 
 	return (
 		<Box flexDirection="column">
@@ -121,7 +180,9 @@ export default function App() {
 
 			{/* フッター */}
 			<Box marginTop={1}>
-				<Text dimColor>↑↓: Navigate | Enter: Open | q: Quit</Text>
+				<Text dimColor>
+					↑↓: Navigate | Enter: Open | Space/p: Preview | q: Quit
+				</Text>
 			</Box>
 		</Box>
 	);
