@@ -22,7 +22,7 @@ export default function App() {
 	);
 	const { exit } = useApp();
 
-	// ターミナルサイズの監視
+	// Monitor terminal size
 	useEffect(() => {
 		const handleResize = () => {
 			setTerminalWidth(process.stdout.columns || 80);
@@ -34,7 +34,7 @@ export default function App() {
 		};
 	}, []);
 
-	// ファイル一覧を読み込む
+	// Load file list
 	useEffect(() => {
 		try {
 			const entries = fs.readdirSync(currentPath);
@@ -54,13 +54,13 @@ export default function App() {
 				})
 				.filter((item): item is FileItem => item !== null)
 				.sort((a, b) => {
-					// ディレクトリを先に表示
+					// Show directories first
 					if (a.isDirectory && !b.isDirectory) return -1;
 					if (!a.isDirectory && b.isDirectory) return 1;
 					return a.name.localeCompare(b.name);
 				});
 
-			// 親ディレクトリへの移動を追加
+			// Add parent directory navigation
 			if (currentPath !== "/") {
 				fileItems.unshift({
 					name: "..",
@@ -78,25 +78,25 @@ export default function App() {
 		}
 	}, [currentPath]);
 
-	// ファイルプレビューを読み込む
+	// Load file preview
 	const loadPreview = (filePath: string) => {
 		try {
 			const stats = fs.statSync(filePath);
 			if (stats.size > 1024 * 1024) {
-				// 1MB以上のファイルは読み込まない
-				setPreview("ファイルが大きすぎます (> 1MB)");
+				// Don't load files larger than 1MB
+				setPreview("File too large (> 1MB)");
 				return;
 			}
 
 			const content = fs.readFileSync(filePath, "utf-8");
-			const lines = content.split("\n").slice(0, 10); // 最初の10行だけ表示
+			const lines = content.split("\n").slice(0, 10); // Show only first 10 lines
 			setPreview(lines.join("\n"));
 		} catch (err) {
-			setPreview(`プレビューできません: ${err}`);
+			setPreview(`Cannot preview: ${err}`);
 		}
 	};
 
-	// キーボード入力処理
+	// Handle keyboard input
 	useInput((input, key) => {
 		if (input === "q") {
 			exit();
@@ -117,7 +117,7 @@ export default function App() {
 		}
 
 		if (input === " " || input === "p") {
-			// スペースまたはpでプレビュー
+			// Preview with space or p
 			const selected = files[selectedIndex];
 			if (selected && !selected.isDirectory) {
 				const filePath = path.join(currentPath, selected.name);
@@ -139,19 +139,19 @@ export default function App() {
 	});
 
 	if (showPreview && preview) {
-		// プレビュー画面
+		// Preview screen
 		return (
 			<Box flexDirection="column">
 				<Box marginBottom={1}>
 					<Text bold color="yellow">
-						📄 プレビュー: {files[selectedIndex]?.name}
+						📄 Preview: {files[selectedIndex]?.name}
 					</Text>
 				</Box>
 				<Box borderStyle="single" padding={1} flexDirection="column">
 					<Text>{preview}</Text>
 				</Box>
 				<Box marginTop={1}>
-					<Text dimColor>ESC: 戻る</Text>
+					<Text dimColor>ESC: Back</Text>
 				</Box>
 			</Box>
 		);
@@ -159,21 +159,21 @@ export default function App() {
 
 	return (
 		<Box flexDirection="column">
-			{/* ヘッダー */}
+			{/* Header */}
 			<Box marginBottom={1}>
 				<Text bold color="cyan">
 					📁 {truncateFileName(currentPath, terminalWidth - 2)}
 				</Text>
 			</Box>
 
-			{/* エラー表示 */}
+			{/* Error display */}
 			{error && (
 				<Box marginBottom={1}>
 					<Text color="red">{error}</Text>
 				</Box>
 			)}
 
-			{/* ファイル一覧 */}
+			{/* File list */}
 			<Box flexDirection="column">
 				{files.map((file, index) => (
 					<Box key={`${file.name}-${index}`}>
@@ -192,7 +192,7 @@ export default function App() {
 				))}
 			</Box>
 
-			{/* フッター */}
+			{/* Footer */}
 			<Box marginTop={1}>
 				<Text dimColor>
 					{terminalWidth > 50
@@ -204,7 +204,7 @@ export default function App() {
 	);
 }
 
-// ファイルサイズをフォーマット
+// Format file size
 function formatFileSize(bytes: number): string {
 	if (bytes === 0) return "0 B";
 	const k = 1024;
@@ -213,22 +213,22 @@ function formatFileSize(bytes: number): string {
 	return `${Number.parseFloat((bytes / k ** i).toFixed(1))} ${sizes[i]}`;
 }
 
-// ファイル名を幅に応じて省略
+// Truncate filename based on width
 function truncateFileName(name: string, terminalWidth: number): string {
-	// アイコンとインデント分を引いた利用可能幅
+	// Available width minus icons and indentation
 	const availableWidth = Math.max(20, terminalWidth - 25);
 
 	if (name.length <= availableWidth) {
 		return name;
 	}
 
-	// 拡張子を保持
+	// Preserve file extension
 	const ext = path.extname(name);
 	const baseName = path.basename(name, ext);
-	const maxBaseLength = availableWidth - ext.length - 3; // "..."の分
+	const maxBaseLength = availableWidth - ext.length - 3; // For "..."
 
 	if (maxBaseLength < 5) {
-		// 非常に狭い場合
+		// Very narrow case
 		return `${name.slice(0, availableWidth - 3)}...`;
 	}
 
