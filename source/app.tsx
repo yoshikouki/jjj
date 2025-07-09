@@ -116,23 +116,26 @@ export default function App() {
 			setSelectedIndex((prev) => Math.min(files.length - 1, prev + 1));
 		}
 
-		if (input === " " || input === "p") {
-			// Preview with space or p
+		if (key.return) {
 			const selected = files[selectedIndex];
-			if (selected && !selected.isDirectory) {
-				const filePath = path.join(currentPath, selected.name);
-				loadPreview(filePath);
-				setShowPreview(true);
-			}
-		}
-
-		if (key.return && !showPreview) {
-			const selected = files[selectedIndex];
-			if (selected?.isDirectory) {
-				if (selected.name === "..") {
-					setCurrentPath(path.dirname(currentPath));
+			if (selected) {
+				if (selected.isDirectory) {
+					// Navigate to directory
+					if (selected.name === "..") {
+						setCurrentPath(path.dirname(currentPath));
+					} else {
+						setCurrentPath(path.join(currentPath, selected.name));
+					}
 				} else {
-					setCurrentPath(path.join(currentPath, selected.name));
+					// Toggle preview for files
+					if (showPreview) {
+						setShowPreview(false);
+						setPreview(null);
+					} else {
+						const filePath = path.join(currentPath, selected.name);
+						loadPreview(filePath);
+						setShowPreview(true);
+					}
 				}
 			}
 		}
@@ -151,7 +154,7 @@ export default function App() {
 					<Text>{preview}</Text>
 				</Box>
 				<Box marginTop={1}>
-					<Text dimColor>ESC: Back</Text>
+					<Text dimColor>Enter/ESC: Back</Text>
 				</Box>
 			</Box>
 		);
@@ -196,8 +199,8 @@ export default function App() {
 			<Box marginTop={1}>
 				<Text dimColor>
 					{terminalWidth > 50
-						? "↑↓: Navigate | Enter: Open | Space/p: Preview | q: Quit"
-						: "↑↓ Enter Space q"}
+						? "↑↓: Navigate | Enter: Open/Preview | q: Quit"
+						: "↑↓ Enter q"}
 				</Text>
 			</Box>
 		</Box>
