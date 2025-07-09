@@ -336,7 +336,7 @@ const formatBytes = (bytes: number): string => {
  * @param delay - 遅延時間（ミリ秒）
  * @returns デバウンスされた関数
  */
-export const debounce = <T extends (...args: any[]) => any>(
+export const debounce = <T extends (...args: unknown[]) => unknown>(
 	fn: T,
 	delay: number,
 ): ((...args: Parameters<T>) => void) => {

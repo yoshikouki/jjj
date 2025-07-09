@@ -4,7 +4,12 @@
  * 全ての関数は副作用なしで、同じ入力に対して同じ出力を返す
  */
 
-import type { FileItem, FileSortConfig, SortOrder, SortType } from "../types/index.js";
+import type {
+	FileItem,
+	FileSortConfig,
+	SortOrder,
+	SortType,
+} from "../types/index.js";
 
 /**
  * ファイルリストをソート設定に従ってソートする純粋関数
