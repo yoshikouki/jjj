@@ -108,12 +108,42 @@ export default function App() {
 			return;
 		}
 
-		if (key.upArrow && !showPreview) {
-			setSelectedIndex((prev) => Math.max(0, prev - 1));
+		if (key.upArrow) {
+			setSelectedIndex((prev) => {
+				const newIndex = Math.max(0, prev - 1);
+				// If in preview mode, update preview for the new file
+				if (showPreview) {
+					const newSelected = files[newIndex];
+					if (newSelected && !newSelected.isDirectory) {
+						const filePath = path.join(currentPath, newSelected.name);
+						loadPreview(filePath);
+					} else {
+						// Close preview if new selection is a directory
+						setShowPreview(false);
+						setPreview(null);
+					}
+				}
+				return newIndex;
+			});
 		}
 
-		if (key.downArrow && !showPreview) {
-			setSelectedIndex((prev) => Math.min(files.length - 1, prev + 1));
+		if (key.downArrow) {
+			setSelectedIndex((prev) => {
+				const newIndex = Math.min(files.length - 1, prev + 1);
+				// If in preview mode, update preview for the new file
+				if (showPreview) {
+					const newSelected = files[newIndex];
+					if (newSelected && !newSelected.isDirectory) {
+						const filePath = path.join(currentPath, newSelected.name);
+						loadPreview(filePath);
+					} else {
+						// Close preview if new selection is a directory
+						setShowPreview(false);
+						setPreview(null);
+					}
+				}
+				return newIndex;
+			});
 		}
 
 		if (key.return) {
@@ -154,7 +184,7 @@ export default function App() {
 					<Text>{preview}</Text>
 				</Box>
 				<Box marginTop={1}>
-					<Text dimColor>Enter/ESC: Back</Text>
+					<Text dimColor>↑↓: Navigate files | Enter/ESC: Back</Text>
 				</Box>
 			</Box>
 		);
