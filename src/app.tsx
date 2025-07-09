@@ -67,11 +67,11 @@ export default function App() {
 		const handleResize = () => {
 			const newWidth = process.stdout.columns || 80;
 			const newHeight = process.stdout.rows || 24;
-			
+
 			// Ensure minimum terminal size
 			setTerminalWidth(Math.max(20, newWidth));
 			setTerminalHeight(Math.max(10, newHeight));
-			
+
 			// Reset scroll position when terminal size changes significantly
 			if (Math.abs(newHeight - terminalHeight) > 5) {
 				setVisibleStartIndex(0);
@@ -200,7 +200,6 @@ export default function App() {
 			setSelectedIndex(newIndex);
 
 			// Update visible window for scrolling
-			const availableHeight = calculateAvailableHeight();
 			if (newIndex < visibleStartIndex) {
 				setVisibleStartIndex(newIndex);
 			}
@@ -369,11 +368,14 @@ export default function App() {
 			{debugMode && (
 				<Box marginBottom={1} borderStyle="single" padding={1}>
 					<Text dimColor>
-						Terminal: {terminalHeight}x{terminalWidth} | 
-						Available: {calculateAvailableHeight()} | 
-						Files: {files.length} | 
-						Visible: {visibleStartIndex}-{Math.min(visibleStartIndex + calculateAvailableHeight(), files.length)} | 
-						Error: {error ? 'Yes' : 'No'}
+						Terminal: {terminalHeight}x{terminalWidth} | Available:{" "}
+						{calculateAvailableHeight()} | Files: {files.length} | Visible:{" "}
+						{visibleStartIndex}-
+						{Math.min(
+							visibleStartIndex + calculateAvailableHeight(),
+							files.length,
+						)}{" "}
+						| Error: {error ? "Yes" : "No"}
 					</Text>
 				</Box>
 			)}
