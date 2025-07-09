@@ -80,20 +80,25 @@ export default function App() {
 
 	// Load file preview
 	const loadPreview = (filePath: string) => {
-		try {
-			const stats = fs.statSync(filePath);
-			if (stats.size > 1024 * 1024) {
-				// Don't load files larger than 1MB
-				setPreview("File too large (> 1MB)");
-				return;
-			}
+		// Clear previous preview first
+		setPreview(null);
+		
+		setTimeout(() => {
+			try {
+				const stats = fs.statSync(filePath);
+				if (stats.size > 1024 * 1024) {
+					// Don't load files larger than 1MB
+					setPreview("File too large (> 1MB)");
+					return;
+				}
 
-			const content = fs.readFileSync(filePath, "utf-8");
-			const lines = content.split("\n").slice(0, 10); // Show only first 10 lines
-			setPreview(lines.join("\n"));
-		} catch (err) {
-			setPreview(`Cannot preview: ${err}`);
-		}
+				const content = fs.readFileSync(filePath, "utf-8");
+				const lines = content.split("\n").slice(0, 10); // Show only first 10 lines
+				setPreview(lines.join("\n"));
+			} catch (err) {
+				setPreview(`Cannot preview: ${err}`);
+			}
+		}, 50); // Small delay to prevent render conflicts
 	};
 
 	// Handle keyboard input
@@ -109,41 +114,39 @@ export default function App() {
 		}
 
 		if (key.upArrow) {
-			setSelectedIndex((prev) => {
-				const newIndex = Math.max(0, prev - 1);
-				// If in preview mode, update preview for the new file
-				if (showPreview) {
-					const newSelected = files[newIndex];
-					if (newSelected && !newSelected.isDirectory) {
-						const filePath = path.join(currentPath, newSelected.name);
-						loadPreview(filePath);
-					} else {
-						// Close preview if new selection is a directory
-						setShowPreview(false);
-						setPreview(null);
-					}
+			const newIndex = Math.max(0, selectedIndex - 1);
+			setSelectedIndex(newIndex);
+			
+			// If in preview mode, update preview for the new file
+			if (showPreview) {
+				const newSelected = files[newIndex];
+				if (newSelected && !newSelected.isDirectory) {
+					const filePath = path.join(currentPath, newSelected.name);
+					loadPreview(filePath);
+				} else {
+					// Close preview if new selection is a directory
+					setShowPreview(false);
+					setPreview(null);
 				}
-				return newIndex;
-			});
+			}
 		}
 
 		if (key.downArrow) {
-			setSelectedIndex((prev) => {
-				const newIndex = Math.min(files.length - 1, prev + 1);
-				// If in preview mode, update preview for the new file
-				if (showPreview) {
-					const newSelected = files[newIndex];
-					if (newSelected && !newSelected.isDirectory) {
-						const filePath = path.join(currentPath, newSelected.name);
-						loadPreview(filePath);
-					} else {
-						// Close preview if new selection is a directory
-						setShowPreview(false);
-						setPreview(null);
-					}
+			const newIndex = Math.min(files.length - 1, selectedIndex + 1);
+			setSelectedIndex(newIndex);
+			
+			// If in preview mode, update preview for the new file
+			if (showPreview) {
+				const newSelected = files[newIndex];
+				if (newSelected && !newSelected.isDirectory) {
+					const filePath = path.join(currentPath, newSelected.name);
+					loadPreview(filePath);
+				} else {
+					// Close preview if new selection is a directory
+					setShowPreview(false);
+					setPreview(null);
 				}
-				return newIndex;
-			});
+			}
 		}
 
 		if (key.return) {
@@ -171,7 +174,7 @@ export default function App() {
 		}
 	});
 
-	if (showPreview && preview) {
+	if (showPreview) {
 		// Preview screen
 		return (
 			<Box flexDirection="column">
@@ -180,8 +183,12 @@ export default function App() {
 						📄 Preview: {files[selectedIndex]?.name}
 					</Text>
 				</Box>
-				<Box borderStyle="single" padding={1} flexDirection="column">
-					<Text>{preview}</Text>
+				<Box borderStyle="single" padding={1} flexDirection="column" minHeight={10}>
+					{preview ? (
+						<Text>{preview}</Text>
+					) : (
+						<Text dimColor>Loading...</Text>
+					)}
 				</Box>
 				<Box marginTop={1}>
 					<Text dimColor>↑↓: Navigate files | Enter/ESC: Back</Text>
