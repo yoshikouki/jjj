@@ -13,7 +13,9 @@ meow(
 
 	Controls:
 	  ↑/↓     Navigate files
-	  Enter   Open directory
+	  ←/→     Navigate directories/Preview files
+	  Space   Toggle preview
+	  Enter   Open directory or toggle preview
 	  q       Quit
 
 	Examples

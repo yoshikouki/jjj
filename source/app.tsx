@@ -20,19 +20,72 @@ export default function App() {
 	const [terminalWidth, setTerminalWidth] = useState(
 		process.stdout.columns || 80,
 	);
+	const [terminalHeight, setTerminalHeight] = useState(
+		process.stdout.rows || 24,
+	);
+	const [visibleStartIndex, setVisibleStartIndex] = useState(0);
+	const [debugMode, setDebugMode] = useState(false); // Debug mode toggle
 	const { exit } = useApp();
+
+	// Calculate available height for file list
+	const calculateAvailableHeight = () => {
+		let usedHeight = 0;
+
+		// Debug info (if enabled): 3 lines (border + padding + content)
+		if (debugMode) {
+			usedHeight += 3;
+		}
+
+		// Header: 1 line + marginBottom
+		usedHeight += 2;
+
+		// Error display (if present): 1 line + marginBottom
+		if (error) {
+			usedHeight += 2;
+		}
+
+		// Footer: 1 line + marginTop
+		usedHeight += 2;
+
+		// Scroll indicator: 1 line + marginTop (always reserve space to avoid layout shift)
+		usedHeight += 2;
+
+		// Add buffer for terminal rendering issues (tmux, etc.)
+		usedHeight += 1;
+
+		// Calculate final available height
+		const availableHeight = terminalHeight - usedHeight;
+
+		// Ensure minimum display height of 5 lines for better usability
+		// For very small terminals, reduce minimum to 3 lines
+		const minHeight = terminalHeight < 15 ? 3 : 5;
+		return Math.max(minHeight, availableHeight);
+	};
 
 	// Monitor terminal size
 	useEffect(() => {
 		const handleResize = () => {
-			setTerminalWidth(process.stdout.columns || 80);
+			const newWidth = process.stdout.columns || 80;
+			const newHeight = process.stdout.rows || 24;
+			
+			// Ensure minimum terminal size
+			setTerminalWidth(Math.max(20, newWidth));
+			setTerminalHeight(Math.max(10, newHeight));
+			
+			// Reset scroll position when terminal size changes significantly
+			if (Math.abs(newHeight - terminalHeight) > 5) {
+				setVisibleStartIndex(0);
+			}
 		};
+
+		// Initial size check
+		handleResize();
 
 		process.stdout.on("resize", handleResize);
 		return () => {
 			process.stdout.off("resize", handleResize);
 		};
-	}, []);
+	}, [terminalHeight]);
 
 	// Load file list
 	useEffect(() => {
@@ -72,6 +125,7 @@ export default function App() {
 
 			setFiles(fileItems);
 			setSelectedIndex(0);
+			setVisibleStartIndex(0);
 			setError(null);
 		} catch (err) {
 			setError(`Error reading directory: ${err}`);
@@ -82,7 +136,7 @@ export default function App() {
 	const loadPreview = (filePath: string) => {
 		// Clear previous preview first
 		setPreview(null);
-		
+
 		setTimeout(() => {
 			try {
 				const stats = fs.statSync(filePath);
@@ -107,6 +161,34 @@ export default function App() {
 			exit();
 		}
 
+		// Toggle debug mode with 'd' key
+		if (input === "d") {
+			setDebugMode(!debugMode);
+			return;
+		}
+
+		if (input === " ") {
+			// Space key: toggle preview
+			const selected = files[selectedIndex];
+			if (selected && !selected.isDirectory) {
+				if (showPreview) {
+					setShowPreview(false);
+					setPreview(null);
+				} else {
+					const filePath = path.join(currentPath, selected.name);
+					loadPreview(filePath);
+					setShowPreview(true);
+				}
+			}
+			return;
+		}
+
+		if (input === "d") {
+			// Debug mode toggle
+			setDebugMode(!debugMode);
+			return;
+		}
+
 		if (key.escape && showPreview) {
 			setShowPreview(false);
 			setPreview(null);
@@ -116,7 +198,13 @@ export default function App() {
 		if (key.upArrow) {
 			const newIndex = Math.max(0, selectedIndex - 1);
 			setSelectedIndex(newIndex);
-			
+
+			// Update visible window for scrolling
+			const availableHeight = calculateAvailableHeight();
+			if (newIndex < visibleStartIndex) {
+				setVisibleStartIndex(newIndex);
+			}
+
 			// If in preview mode, update preview for the new file
 			if (showPreview) {
 				const newSelected = files[newIndex];
@@ -134,7 +222,13 @@ export default function App() {
 		if (key.downArrow) {
 			const newIndex = Math.min(files.length - 1, selectedIndex + 1);
 			setSelectedIndex(newIndex);
-			
+
+			// Update visible window for scrolling
+			const availableHeight = calculateAvailableHeight();
+			if (newIndex >= visibleStartIndex + availableHeight) {
+				setVisibleStartIndex(newIndex - availableHeight + 1);
+			}
+
 			// If in preview mode, update preview for the new file
 			if (showPreview) {
 				const newSelected = files[newIndex];
@@ -145,6 +239,38 @@ export default function App() {
 					// Close preview if new selection is a directory
 					setShowPreview(false);
 					setPreview(null);
+				}
+			}
+		}
+
+		if (key.leftArrow) {
+			if (showPreview) {
+				// In preview mode: close preview
+				setShowPreview(false);
+				setPreview(null);
+			} else {
+				// Navigate to parent directory
+				setCurrentPath(path.dirname(currentPath));
+				setShowPreview(false);
+				setPreview(null);
+			}
+		}
+
+		if (key.rightArrow) {
+			const selected = files[selectedIndex];
+			if (selected) {
+				if (selected.isDirectory) {
+					// Navigate to directory
+					if (selected.name === "..") {
+						setCurrentPath(path.dirname(currentPath));
+					} else {
+						setCurrentPath(path.join(currentPath, selected.name));
+					}
+				} else {
+					// Preview file
+					const filePath = path.join(currentPath, selected.name);
+					loadPreview(filePath);
+					setShowPreview(true);
 				}
 			}
 		}
@@ -175,6 +301,24 @@ export default function App() {
 	});
 
 	if (showPreview) {
+		// Get previous/next file info
+		const getPrevNextFiles = () => {
+			const prevIndex = selectedIndex > 0 ? selectedIndex - 1 : null;
+			const nextIndex =
+				selectedIndex < files.length - 1 ? selectedIndex + 1 : null;
+
+			const prevFile = prevIndex !== null ? files[prevIndex] : null;
+			const nextFile = nextIndex !== null ? files[nextIndex] : null;
+
+			return { prevFile, nextFile };
+		};
+
+		const { prevFile, nextFile } = getPrevNextFiles();
+
+		// Calculate dynamic preview height
+		// Header (2) + Footer (2) + Navigation hints (2) = 6 minimum
+		const previewHeight = Math.max(5, terminalHeight - 8); // Add buffer for better rendering
+
 		// Preview screen
 		return (
 			<Box flexDirection="column">
@@ -183,15 +327,37 @@ export default function App() {
 						📄 Preview: {files[selectedIndex]?.name}
 					</Text>
 				</Box>
-				<Box borderStyle="single" padding={1} flexDirection="column" minHeight={10}>
-					{preview ? (
-						<Text>{preview}</Text>
-					) : (
-						<Text dimColor>Loading...</Text>
-					)}
+				<Box
+					borderStyle="single"
+					padding={1}
+					flexDirection="column"
+					height={previewHeight}
+				>
+					{preview ? <Text>{preview}</Text> : <Text dimColor>Loading...</Text>}
 				</Box>
-				<Box marginTop={1}>
-					<Text dimColor>↑↓: Navigate files | Enter/ESC: Back</Text>
+				<Box marginTop={1} flexDirection="column">
+					{/* Navigation hints */}
+					{terminalHeight > 10 && (
+						<Box justifyContent="space-between">
+							<Text dimColor>
+								{prevFile
+									? `↑ ${truncateFileName(prevFile.name, terminalWidth / 2 - 5)}`
+									: ""}
+							</Text>
+							<Text dimColor>
+								{nextFile
+									? `${truncateFileName(nextFile.name, terminalWidth / 2 - 5)} ↓`
+									: ""}
+							</Text>
+						</Box>
+					)}
+					<Box marginTop={terminalHeight > 10 ? 1 : 0}>
+						<Text dimColor>
+							{terminalHeight > 8
+								? "Space: Toggle | ←: Back | ↑↓: Navigate | Enter/ESC: Exit"
+								: "Space ← ↑↓ Enter ESC"}
+						</Text>
+					</Box>
 				</Box>
 			</Box>
 		);
@@ -199,6 +365,19 @@ export default function App() {
 
 	return (
 		<Box flexDirection="column">
+			{/* Debug info */}
+			{debugMode && (
+				<Box marginBottom={1} borderStyle="single" padding={1}>
+					<Text dimColor>
+						Terminal: {terminalHeight}x{terminalWidth} | 
+						Available: {calculateAvailableHeight()} | 
+						Files: {files.length} | 
+						Visible: {visibleStartIndex}-{Math.min(visibleStartIndex + calculateAvailableHeight(), files.length)} | 
+						Error: {error ? 'Yes' : 'No'}
+					</Text>
+				</Box>
+			)}
+
 			{/* Header */}
 			<Box marginBottom={1}>
 				<Text bold color="cyan">
@@ -215,29 +394,62 @@ export default function App() {
 
 			{/* File list */}
 			<Box flexDirection="column">
-				{files.map((file, index) => (
-					<Box key={`${file.name}-${index}`}>
-						<Text
-							color={selectedIndex === index ? "green" : "white"}
-							backgroundColor={selectedIndex === index ? "gray" : undefined}
-						>
-							{selectedIndex === index ? "▶ " : "  "}
-							{file.isDirectory ? "📁" : "📄"}{" "}
-							{truncateFileName(file.name, terminalWidth)}
-							{!file.isDirectory &&
-								terminalWidth > 60 &&
-								` (${formatFileSize(file.size)})`}
+				{(() => {
+					const availableHeight = calculateAvailableHeight();
+					const visibleFiles = files.slice(
+						visibleStartIndex,
+						visibleStartIndex + availableHeight,
+					);
+
+					return visibleFiles.map((file, visibleIndex) => {
+						const actualIndex = visibleStartIndex + visibleIndex;
+						return (
+							<Box key={`${file.name}-${actualIndex}`}>
+								<Text
+									color={selectedIndex === actualIndex ? "green" : "white"}
+									backgroundColor={
+										selectedIndex === actualIndex ? "gray" : undefined
+									}
+								>
+									{selectedIndex === actualIndex ? "▶ " : "  "}
+									{file.isDirectory ? "📁" : "📄"}{" "}
+									{truncateFileName(file.name, terminalWidth)}
+									{!file.isDirectory &&
+										terminalWidth > 60 &&
+										` (${formatFileSize(file.size)})`}
+								</Text>
+							</Box>
+						);
+					});
+				})()}
+			</Box>
+
+			{/* Scroll indicators - always render to maintain consistent layout */}
+			<Box justifyContent="center" marginTop={1} height={1}>
+				{(() => {
+					const availableHeight = calculateAvailableHeight();
+					const needsScrollIndicator = files.length > availableHeight;
+
+					if (!needsScrollIndicator) {
+						return <Text> </Text>; // Empty space to maintain layout
+					}
+
+					return (
+						<Text dimColor>
+							{visibleStartIndex > 0 ? "↑ " : ""}
+							{`${visibleStartIndex + 1}-${Math.min(visibleStartIndex + availableHeight, files.length)} of ${files.length}`}
+							{visibleStartIndex + availableHeight < files.length ? " ↓" : ""}
 						</Text>
-					</Box>
-				))}
+					);
+				})()}
 			</Box>
 
 			{/* Footer */}
 			<Box marginTop={1}>
 				<Text dimColor>
 					{terminalWidth > 50
-						? "↑↓: Navigate | Enter: Open/Preview | q: Quit"
-						: "↑↓ Enter q"}
+						? "↑↓: Navigate | ←→: Dir/Preview | Space: Toggle | Enter: Open | q: Quit | d: Debug"
+						: "↑↓←→ Space Enter q d"}
 				</Text>
 			</Box>
 		</Box>

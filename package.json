@@ -10,6 +10,7 @@
 	"scripts": {
 		"build": "tsc",
 		"dev": "tsc --watch",
+		"start": "bun run source/cli.tsx",
 		"test": "biome check --write && ava",
 		"prepare": "husky",
 		"lint": "biome check --write",
