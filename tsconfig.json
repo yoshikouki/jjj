@@ -1,7 +1,13 @@
 {
 	"extends": "@sindresorhus/tsconfig",
 	"compilerOptions": {
-		"outDir": "dist"
+		"outDir": "dist",
+		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
+		"moduleResolution": "node"
 	},
-	"include": ["src"]
+	"include": ["src"],
+	"ts-node": {
+		"esm": true
+	}
 }

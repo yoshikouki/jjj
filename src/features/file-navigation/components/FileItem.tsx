@@ -14,6 +14,12 @@ import {
 	getFileIcon,
 	truncateFileName,
 } from "../utils/fileFormat.js";
+import {
+	areDisplayConfigsEqual,
+	areFileItemsEqual,
+	useOptimizedMemo,
+	useRenderTime,
+} from "../utils/performanceUtils.js";
 
 /**
  * ファイルアイテムコンポーネントのプロパティ
@@ -38,32 +44,64 @@ interface FileItemProps {
  */
 export const FileItemComponent: React.FC<FileItemProps> = React.memo(
 	({ file, isSelected, displayConfig }) => {
-		// アイコンを取得
-		const icon = getFileIcon(file);
+		// レンダリング時間を測定（デバッグ用）
+		useRenderTime("FileItemComponent", false);
 
-		// ファイル名を切り詰め
-		const displayName = truncateFileName(
-			file.name,
-			displayConfig.terminalSize.width,
+		// アイコンを取得（メモ化）
+		const icon = useOptimizedMemo(
+			() => getFileIcon(file),
+			[file.name, file.isDirectory],
 		);
 
-		// 選択状態のスタイル
-		const textColor = isSelected ? "green" : "white";
-		const backgroundColor = isSelected ? "gray" : undefined;
+		// ファイル名を切り詰め（メモ化）
+		const displayName = useOptimizedMemo(
+			() => truncateFileName(file.name, displayConfig.terminalSize.width),
+			[file.name, displayConfig.terminalSize.width],
+		);
 
-		// サイズ表示の決定
-		const showSize =
-			displayConfig.showFileSize &&
-			!file.isDirectory &&
-			displayConfig.terminalSize.width > 60;
+		// 選択状態のスタイル（メモ化）
+		const styles = useOptimizedMemo(
+			() => ({
+				textColor: isSelected ? "green" : "white",
+				backgroundColor: isSelected ? "gray" : undefined,
+			}),
+			[isSelected],
+		);
 
-		// 日付表示の決定
-		const showDate =
-			displayConfig.showModifiedDate && displayConfig.terminalSize.width > 80;
+		// サイズ表示の決定（メモ化）
+		const showSize = useOptimizedMemo(
+			() =>
+				displayConfig.showFileSize &&
+				!file.isDirectory &&
+				displayConfig.terminalSize.width > 60,
+			[
+				displayConfig.showFileSize,
+				file.isDirectory,
+				displayConfig.terminalSize.width,
+			],
+		);
+
+		// 日付表示の決定（メモ化）
+		const showDate = useOptimizedMemo(
+			() =>
+				displayConfig.showModifiedDate && displayConfig.terminalSize.width > 80,
+			[displayConfig.showModifiedDate, displayConfig.terminalSize.width],
+		);
+
+		// フォーマットされたサイズと日付（メモ化）
+		const formattedSize = useOptimizedMemo(
+			() => (showSize ? formatFileSize(file.size) : null),
+			[showSize, file.size],
+		);
+
+		const formattedDate = useOptimizedMemo(
+			() => (showDate ? formatRelativeDate(file.modified) : null),
+			[showDate, file.modified],
+		);
 
 		return (
 			<Box>
-				<Text color={textColor} backgroundColor={backgroundColor}>
+				<Text color={styles.textColor} backgroundColor={styles.backgroundColor}>
 					{/* 選択インジケーター */}
 					{isSelected ? "▶ " : "  "}
 
@@ -74,12 +112,20 @@ export const FileItemComponent: React.FC<FileItemProps> = React.memo(
 					{displayName}
 
 					{/* ファイルサイズ */}
-					{showSize && ` (${formatFileSize(file.size)})`}
+					{formattedSize && ` (${formattedSize})`}
 
 					{/* 更新日時 */}
-					{showDate && ` - ${formatRelativeDate(file.modified)}`}
+					{formattedDate && ` - ${formattedDate}`}
 				</Text>
 			</Box>
+		);
+	},
+	(prevProps, nextProps) => {
+		// カスタム比較関数で最適化
+		return (
+			areFileItemsEqual(prevProps.file, nextProps.file) &&
+			prevProps.isSelected === nextProps.isSelected &&
+			areDisplayConfigsEqual(prevProps.displayConfig, nextProps.displayConfig)
 		);
 	},
 );

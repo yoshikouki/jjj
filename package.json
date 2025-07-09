@@ -37,11 +37,11 @@
 	},
 	"ava": {
 		"extensions": {
-			"ts": "module",
-			"tsx": "module"
+			"ts": "module"
 		},
 		"nodeArguments": [
-			"--loader=ts-node/esm"
+			"--loader=ts-node/esm",
+			"--experimental-specifier-resolution=node"
 		]
 	}
 }

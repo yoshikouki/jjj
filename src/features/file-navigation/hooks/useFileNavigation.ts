@@ -9,7 +9,7 @@ import { useCallback, useEffect, useReducer, useRef } from "react";
 import {
 	getParentDirectory,
 	isRootDirectory,
-	readDirectory,
+	readDirectoryWithCache,
 } from "../services/fileSystem.js";
 import type {
 	FileItem,
@@ -18,11 +18,12 @@ import type {
 	FileSortConfig,
 	UseFileNavigation,
 } from "../types/index.js";
+import { addParentDirectory, getDefaultSortConfig } from "../utils/fileSort.js";
 import {
-	addParentDirectory,
-	getDefaultSortConfig,
-	sortFilesDefault,
-} from "../utils/fileSort.js";
+	useAdvancedDebounce,
+	useOptimizedCallback,
+} from "../utils/performanceUtils.js";
+import { ParallelProcessor } from "../utils/workerPool.js";
 
 /**
  * ファイルナビゲーション状態のアクションタイプ
@@ -108,51 +109,67 @@ export const useFileNavigation = (
 
 	// 現在のパスが変更されたかどうかを追跡
 	const previousPathRef = useRef<string>(initialPath);
+	const parallelProcessor = useRef<ParallelProcessor>(new ParallelProcessor());
 
-	// ファイルリストを読み込む関数
-	const loadFiles = useCallback(async (path: string) => {
-		dispatch({ type: "SET_LOADING", payload: true });
-		dispatch({ type: "SET_ERROR", payload: null });
+	// ファイルリストを読み込む関数（デバウンス付き）
+	const loadFiles = useOptimizedCallback(
+		async (path: string) => {
+			dispatch({ type: "SET_LOADING", payload: true });
+			dispatch({ type: "SET_ERROR", payload: null });
 
-		try {
-			const result = await readDirectory(path);
+			try {
+				// キャッシュ付きで読み込み
+				const result = await readDirectoryWithCache(path);
 
-			if (result.success && result.data) {
-				// ファイルをソート
-				const sortedFiles = sortFilesDefault(result.data);
+				if (result.success && result.data) {
+					// 並列処理でファイルをソート
+					const sortedFiles = await parallelProcessor.current.sortFiles(
+						result.data,
+						state.sortConfig.sortBy,
+						state.sortConfig.order,
+					);
 
-				// 親ディレクトリエントリを追加
-				const filesWithParent = addParentDirectory(sortedFiles, path);
+					// 親ディレクトリエントリを追加
+					const filesWithParent = addParentDirectory(sortedFiles, path);
 
-				dispatch({ type: "SET_FILES", payload: filesWithParent });
+					dispatch({ type: "SET_FILES", payload: filesWithParent });
 
-				// パスが変更された場合のみ選択をリセット
-				if (path !== previousPathRef.current) {
-					dispatch({ type: "RESET_SELECTION" });
-					previousPathRef.current = path;
+					// パスが変更された場合のみ選択をリセット
+					if (path !== previousPathRef.current) {
+						dispatch({ type: "RESET_SELECTION" });
+						previousPathRef.current = path;
+					}
+				} else {
+					dispatch({
+						type: "SET_ERROR",
+						payload: result.error || "Unknown error",
+					});
+					dispatch({ type: "SET_FILES", payload: [] });
 				}
-			} else {
+			} catch (error) {
 				dispatch({
 					type: "SET_ERROR",
-					payload: result.error || "Unknown error",
+					payload: `Failed to load files: ${String(error)}`,
 				});
 				dispatch({ type: "SET_FILES", payload: [] });
+			} finally {
+				dispatch({ type: "SET_LOADING", payload: false });
 			}
-		} catch (error) {
-			dispatch({
-				type: "SET_ERROR",
-				payload: `Failed to load files: ${String(error)}`,
-			});
-			dispatch({ type: "SET_FILES", payload: [] });
-		} finally {
-			dispatch({ type: "SET_LOADING", payload: false });
-		}
-	}, []);
+		},
+		[state.sortConfig.sortBy, state.sortConfig.order],
+	);
+
+	// デバウンス処理を適用
+	const debouncedLoadFiles = useAdvancedDebounce(loadFiles, 300, {
+		leading: true,
+		trailing: false,
+		maxWait: 1000,
+	});
 
 	// 初回読み込みとパス変更時の処理
 	useEffect(() => {
-		loadFiles(state.currentPath);
-	}, [state.currentPath, loadFiles]);
+		debouncedLoadFiles(state.currentPath);
+	}, [state.currentPath, debouncedLoadFiles]);
 
 	/**
 	 * ディレクトリに移動する
