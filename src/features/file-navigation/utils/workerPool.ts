@@ -11,7 +11,7 @@ import type { FileItem } from "../types/index.js";
 /**
  * ワーカータスクの定義
  */
-export interface WorkerTask<T = any, R = any> {
+export interface WorkerTask<T = unknown, R = unknown> {
 	id: string;
 	type: string;
 	data: T;
@@ -169,7 +169,7 @@ if (!isMainThread) {
 		const { taskId, type, data } = message;
 
 		try {
-			let result;
+			let result: unknown;
 
 			switch (type) {
 				case "sort-files":
@@ -236,9 +236,16 @@ async function sortFilesWorker(data: {
 /**
  * ファイルフィルタリング処理（ワーカー用）
  */
+interface FilterOptions {
+	showHidden?: boolean;
+	fileTypes?: string[];
+	sizeRange?: { min?: number; max?: number };
+	namePattern?: string;
+}
+
 async function filterFilesWorker(data: {
 	files: FileItem[];
-	filters: any;
+	filters: FilterOptions;
 }): Promise<FileItem[]> {
 	const { files, filters } = data;
 
@@ -285,10 +292,16 @@ async function filterFilesWorker(data: {
 /**
  * ファイル検索処理（ワーカー用）
  */
+interface SearchOptions {
+	caseSensitive?: boolean;
+	regexMode?: boolean;
+	exactMatch?: boolean;
+}
+
 async function searchFilesWorker(data: {
 	files: FileItem[];
 	query: string;
-	options: any;
+	options: SearchOptions;
 }): Promise<FileItem[]> {
 	const { files, query, options } = data;
 
@@ -321,10 +334,17 @@ async function searchFilesWorker(data: {
 /**
  * ファイルフォーマット処理（ワーカー用）
  */
+interface FormattedFileItem {
+	name: string;
+	size?: string;
+	modified?: string;
+	type: string;
+}
+
 async function formatFilesWorker(data: {
 	files: FileItem[];
 	format: string;
-}): Promise<any[]> {
+}): Promise<FormattedFileItem[]> {
 	const { files, format } = data;
 
 	return files.map((file) => {
@@ -445,7 +465,10 @@ export class ParallelProcessor {
 	/**
 	 * 並列でファイルをフィルター
 	 */
-	async filterFiles(files: FileItem[], filters: any): Promise<FileItem[]> {
+	async filterFiles(
+		files: FileItem[],
+		filters: FilterOptions,
+	): Promise<FileItem[]> {
 		if (files.length < 100) {
 			// 少数のファイルは同期処理
 			return files.filter((file) => {
@@ -477,7 +500,7 @@ export class ParallelProcessor {
 	async searchFiles(
 		files: FileItem[],
 		query: string,
-		options: any = {},
+		options: SearchOptions = {},
 	): Promise<FileItem[]> {
 		if (files.length < 100) {
 			// 少数のファイルは同期処理
@@ -493,7 +516,10 @@ export class ParallelProcessor {
 	/**
 	 * 並列でファイルをフォーマット
 	 */
-	async formatFiles(files: FileItem[], format: string): Promise<any[]> {
+	async formatFiles(
+		files: FileItem[],
+		format: string,
+	): Promise<FormattedFileItem[]> {
 		if (files.length < 100) {
 			// 少数のファイルは同期処理
 			return files.map((file) => {

@@ -26,7 +26,7 @@ export type SortType = "name" | "size" | "modified" | "type";
  * ファイルソート設定
  */
 export interface FileSortConfig {
-	type: SortType;
+	sortBy: SortType;
 	order: SortOrder;
 }
 

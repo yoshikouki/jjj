@@ -151,8 +151,8 @@ test("debounce: 関数の遅延実行", async (t) => {
 });
 
 test("debounce: 引数の正しい渡し方", async (t) => {
-	let receivedArgs: any[] = [];
-	const testFn = (...args: any[]) => {
+	let receivedArgs: unknown[] = [];
+	const testFn = (...args: unknown[]) => {
 		receivedArgs = args;
 	};
 	const debouncedFn = debounce(testFn, 50);

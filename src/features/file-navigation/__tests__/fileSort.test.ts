@@ -15,6 +15,7 @@ import {
 	getDirectoriesOnly,
 	getFilesOnly,
 	sortFiles,
+	sortFilesByConfig,
 	sortFilesDefault,
 	validateSortConfig,
 } from "../utils/fileSort.js";
@@ -48,8 +49,8 @@ const createTestFiles = (): FileItem[] => [
 
 test("sortFiles: 名前の昇順", (t) => {
 	const files = createTestFiles();
-	const config: FileSortConfig = { type: "name", order: "asc" };
-	const result = sortFiles(files, config);
+	const config: FileSortConfig = { sortBy: "name", order: "asc" };
+	const result = sortFilesByConfig(files, config);
 
 	// 結果の順序を確認
 	t.is(result[0].name, "app.js");
@@ -62,8 +63,8 @@ test("sortFiles: 名前の昇順", (t) => {
 
 test("sortFiles: 名前の降順", (t) => {
 	const files = createTestFiles();
-	const config: FileSortConfig = { type: "name", order: "desc" };
-	const result = sortFiles(files, config);
+	const config: FileSortConfig = { sortBy: "name", order: "desc" };
+	const result = sortFilesByConfig(files, config);
 
 	// 結果の順序を確認
 	t.is(result[0].name, "test.ts");
@@ -76,8 +77,8 @@ test("sortFiles: 名前の降順", (t) => {
 
 test("sortFiles: サイズの昇順", (t) => {
 	const files = createTestFiles();
-	const config: FileSortConfig = { type: "size", order: "asc" };
-	const result = sortFiles(files, config);
+	const config: FileSortConfig = { sortBy: "size", order: "asc" };
+	const result = sortFilesByConfig(files, config);
 
 	// ディレクトリはサイズ0として扱われるため最初に来る
 	t.is(result[0].name, "documents");
@@ -90,8 +91,8 @@ test("sortFiles: サイズの昇順", (t) => {
 
 test("sortFiles: サイズの降順", (t) => {
 	const files = createTestFiles();
-	const config: FileSortConfig = { type: "size", order: "desc" };
-	const result = sortFiles(files, config);
+	const config: FileSortConfig = { sortBy: "size", order: "desc" };
+	const result = sortFilesByConfig(files, config);
 
 	// 最大サイズのファイルから順に
 	t.is(result[0].name, "test.ts");
@@ -105,8 +106,8 @@ test("sortFiles: サイズの降順", (t) => {
 
 test("sortFiles: 更新日時の昇順", (t) => {
 	const files = createTestFiles();
-	const config: FileSortConfig = { type: "modified", order: "asc" };
-	const result = sortFiles(files, config);
+	const config: FileSortConfig = { sortBy: "modified", order: "asc" };
+	const result = sortFilesByConfig(files, config);
 
 	// 更新日時順
 	t.is(result[0].name, "readme.txt");
@@ -119,8 +120,8 @@ test("sortFiles: 更新日時の昇順", (t) => {
 
 test("sortFiles: 更新日時の降順", (t) => {
 	const files = createTestFiles();
-	const config: FileSortConfig = { type: "modified", order: "desc" };
-	const result = sortFiles(files, config);
+	const config: FileSortConfig = { sortBy: "modified", order: "desc" };
+	const result = sortFilesByConfig(files, config);
 
 	// 最新から順に
 	t.is(result[0].name, "test.ts");
@@ -133,8 +134,8 @@ test("sortFiles: 更新日時の降順", (t) => {
 
 test("sortFiles: タイプの昇順（ディレクトリ優先）", (t) => {
 	const files = createTestFiles();
-	const config: FileSortConfig = { type: "type", order: "asc" };
-	const result = sortFiles(files, config);
+	const config: FileSortConfig = { sortBy: "type", order: "asc" };
+	const result = sortFilesByConfig(files, config);
 
 	// ディレクトリが最初に来る
 	t.is(result[0].name, "documents");
@@ -148,8 +149,8 @@ test("sortFiles: タイプの昇順（ディレクトリ優先）", (t) => {
 
 test("sortFiles: タイプの降順（ファイル優先）", (t) => {
 	const files = createTestFiles();
-	const config: FileSortConfig = { type: "type", order: "desc" };
-	const result = sortFiles(files, config);
+	const config: FileSortConfig = { sortBy: "type", order: "desc" };
+	const result = sortFilesByConfig(files, config);
 
 	// ファイルが最初に来る
 	t.is(result[0].name, "app.js");
@@ -163,8 +164,8 @@ test("sortFiles: タイプの降順（ファイル優先）", (t) => {
 
 test("sortFiles: 空の配列", (t) => {
 	const files: FileItem[] = [];
-	const config: FileSortConfig = { type: "name", order: "asc" };
-	const result = sortFiles(files, config);
+	const config: FileSortConfig = { sortBy: "name", order: "asc" };
+	const result = sortFilesByConfig(files, config);
 
 	t.deepEqual(result, []);
 });
@@ -172,9 +173,9 @@ test("sortFiles: 空の配列", (t) => {
 test("sortFiles: 純粋関数の検証（元の配列を変更しない）", (t) => {
 	const files = createTestFiles();
 	const originalNames = files.map((f) => f.name);
-	const config: FileSortConfig = { type: "name", order: "asc" };
+	const config: FileSortConfig = { sortBy: "name", order: "asc" };
 
-	sortFiles(files, config);
+	sortFilesByConfig(files, config);
 
 	// 元の配列は変更されない
 	t.deepEqual(
@@ -185,7 +186,7 @@ test("sortFiles: 純粋関数の検証（元の配列を変更しない）", (t)
 
 test("sortFiles: 純粋関数の検証（同じ入力で同じ出力）", (t) => {
 	const files = createTestFiles();
-	const config: FileSortConfig = { type: "name", order: "asc" };
+	const config: FileSortConfig = { sortBy: "name", order: "asc" };
 
 	const result1 = sortFiles(files, config);
 	const result2 = sortFiles(files, config);
@@ -298,14 +299,14 @@ test("addParentDirectory: 純粋関数の検証", (t) => {
 
 test("validateSortConfig: 有効な設定", (t) => {
 	const validConfigs: FileSortConfig[] = [
-		{ type: "name", order: "asc" },
-		{ type: "name", order: "desc" },
-		{ type: "size", order: "asc" },
-		{ type: "size", order: "desc" },
-		{ type: "modified", order: "asc" },
-		{ type: "modified", order: "desc" },
-		{ type: "type", order: "asc" },
-		{ type: "type", order: "desc" },
+		{ sortBy: "name", order: "asc" },
+		{ sortBy: "name", order: "desc" },
+		{ sortBy: "size", order: "asc" },
+		{ sortBy: "size", order: "desc" },
+		{ sortBy: "modified", order: "asc" },
+		{ sortBy: "modified", order: "desc" },
+		{ sortBy: "type", order: "asc" },
+		{ sortBy: "type", order: "desc" },
 	];
 
 	for (const config of validConfigs) {
@@ -314,17 +315,17 @@ test("validateSortConfig: 有効な設定", (t) => {
 });
 
 test("validateSortConfig: 無効なタイプ", (t) => {
-	const invalidConfig = { type: "invalid", order: "asc" } as FileSortConfig;
+	const invalidConfig = { sortBy: "invalid", order: "asc" } as FileSortConfig;
 	t.is(validateSortConfig(invalidConfig), false);
 });
 
 test("validateSortConfig: 無効な順序", (t) => {
-	const invalidConfig = { type: "name", order: "invalid" } as FileSortConfig;
+	const invalidConfig = { sortBy: "name", order: "invalid" } as FileSortConfig;
 	t.is(validateSortConfig(invalidConfig), false);
 });
 
 test("validateSortConfig: 純粋関数の検証", (t) => {
-	const config: FileSortConfig = { type: "name", order: "asc" };
+	const config: FileSortConfig = { sortBy: "name", order: "asc" };
 	const result1 = validateSortConfig(config);
 	const result2 = validateSortConfig(config);
 	t.is(result1, result2);
@@ -337,7 +338,7 @@ test("validateSortConfig: 純粋関数の検証", (t) => {
 test("getDefaultSortConfig: デフォルト設定", (t) => {
 	const result = getDefaultSortConfig();
 
-	t.is(result.type, "name");
+	t.is(result.sortBy, "name");
 	t.is(result.order, "asc");
 });
 
@@ -508,8 +509,8 @@ test("sortFiles: 大量のファイルでも正常に動作", (t) => {
 		createFileItem(`file${i}.txt`, false, Math.random() * 10000),
 	);
 
-	const config: FileSortConfig = { type: "name", order: "asc" };
-	const result = sortFiles(files, config);
+	const config: FileSortConfig = { sortBy: "name", order: "asc" };
+	const result = sortFilesByConfig(files, config);
 
 	t.is(result.length, 1000);
 	// ソートが正しく行われているか確認
@@ -525,8 +526,8 @@ test("sortFiles: 同じ名前のファイルでも安定ソート", (t) => {
 		createFileItem("same.txt", false, 512, new Date("2023-01-03")),
 	];
 
-	const config: FileSortConfig = { type: "name", order: "asc" };
-	const result = sortFiles(files, config);
+	const config: FileSortConfig = { sortBy: "name", order: "asc" };
+	const result = sortFilesByConfig(files, config);
 
 	t.is(result.length, 3);
 	t.true(result.every((file) => file.name === "same.txt"));
@@ -541,8 +542,8 @@ test("sortFiles: 特殊文字を含むファイル名", (t) => {
 		createFileItem("file.with.dots.txt", false),
 	];
 
-	const config: FileSortConfig = { type: "name", order: "asc" };
-	const result = sortFiles(files, config);
+	const config: FileSortConfig = { sortBy: "name", order: "asc" };
+	const result = sortFilesByConfig(files, config);
 
 	t.is(result.length, 5);
 	t.is(typeof result[0].name, "string");

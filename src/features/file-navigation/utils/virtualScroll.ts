@@ -461,11 +461,11 @@ export const useLazyLoading = <T>(
  * 仮想スクロール用のメモリ最適化
  */
 export class VirtualScrollMemoryOptimizer {
-	private cache = new Map<string, any>();
+	private cache = new Map<string, unknown>();
 	private maxCacheSize = 1000;
 	private accessOrder = new Map<string, number>();
 
-	get(key: string): any {
+	get(key: string): unknown {
 		const value = this.cache.get(key);
 		if (value !== undefined) {
 			this.accessOrder.set(key, Date.now());

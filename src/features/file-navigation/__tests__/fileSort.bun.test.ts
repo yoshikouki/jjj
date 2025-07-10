@@ -15,6 +15,7 @@ import {
 	getDirectoriesOnly,
 	getFilesOnly,
 	sortFiles,
+	sortFilesByConfig,
 	sortFilesDefault,
 	validateSortConfig,
 } from "../utils/fileSort.js";
@@ -48,62 +49,62 @@ const createTestFiles = (): FileItem[] => [
 
 test("sortFiles: 名前の昇順", () => {
 	const files = createTestFiles();
-	const config: FileSortConfig = { type: "name", order: "asc" };
-	const result = sortFiles(files, config);
+	const config: FileSortConfig = { sortBy: "name", order: "asc" };
+	const result = sortFilesByConfig(files, config);
 
-	expect(result[0].name).toBe("app.js");
-	expect(result[1].name).toBe("config.json");
-	expect(result[2].name).toBe("documents");
-	expect(result[3].name).toBe("readme.txt");
-	expect(result[4].name).toBe("scripts");
-	expect(result[5].name).toBe("test.ts");
+	expect(result[0]!.name).toBe("app.js");
+	expect(result[1]!.name).toBe("config.json");
+	expect(result[2]!.name).toBe("documents");
+	expect(result[3]!.name).toBe("readme.txt");
+	expect(result[4]!.name).toBe("scripts");
+	expect(result[5]!.name).toBe("test.ts");
 });
 
 test("sortFiles: 名前の降順", () => {
 	const files = createTestFiles();
-	const config: FileSortConfig = { type: "name", order: "desc" };
-	const result = sortFiles(files, config);
+	const config: FileSortConfig = { sortBy: "name", order: "desc" };
+	const result = sortFilesByConfig(files, config);
 
-	expect(result[0].name).toBe("test.ts");
-	expect(result[1].name).toBe("scripts");
-	expect(result[2].name).toBe("readme.txt");
-	expect(result[3].name).toBe("documents");
-	expect(result[4].name).toBe("config.json");
-	expect(result[5].name).toBe("app.js");
+	expect(result[0]!.name).toBe("test.ts");
+	expect(result[1]!.name).toBe("scripts");
+	expect(result[2]!.name).toBe("readme.txt");
+	expect(result[3]!.name).toBe("documents");
+	expect(result[4]!.name).toBe("config.json");
+	expect(result[5]!.name).toBe("app.js");
 });
 
 test("sortFiles: サイズの昇順", () => {
 	const files = createTestFiles();
-	const config: FileSortConfig = { type: "size", order: "asc" };
-	const result = sortFiles(files, config);
+	const config: FileSortConfig = { sortBy: "size", order: "asc" };
+	const result = sortFilesByConfig(files, config);
 
 	// ディレクトリはサイズ0として扱われるため最初に来る
-	expect(result[0].name).toBe("documents");
-	expect(result[1].name).toBe("scripts");
-	expect(result[2].name).toBe("config.json");
-	expect(result[3].name).toBe("readme.txt");
-	expect(result[4].name).toBe("app.js");
-	expect(result[5].name).toBe("test.ts");
+	expect(result[0]!.name).toBe("documents");
+	expect(result[1]!.name).toBe("scripts");
+	expect(result[2]!.name).toBe("config.json");
+	expect(result[3]!.name).toBe("readme.txt");
+	expect(result[4]!.name).toBe("app.js");
+	expect(result[5]!.name).toBe("test.ts");
 });
 
 test("sortFiles: サイズの降順", () => {
 	const files = createTestFiles();
-	const config: FileSortConfig = { type: "size", order: "desc" };
-	const result = sortFiles(files, config);
+	const config: FileSortConfig = { sortBy: "size", order: "desc" };
+	const result = sortFilesByConfig(files, config);
 
 	// 最大サイズのファイルから順に
-	expect(result[0].name).toBe("test.ts");
-	expect(result[1].name).toBe("app.js");
-	expect(result[2].name).toBe("readme.txt");
-	expect(result[3].name).toBe("config.json");
-	expect(result[4].name).toBe("documents");
-	expect(result[5].name).toBe("scripts");
+	expect(result[0]!.name).toBe("test.ts");
+	expect(result[1]!.name).toBe("app.js");
+	expect(result[2]!.name).toBe("readme.txt");
+	expect(result[3]!.name).toBe("config.json");
+	expect(result[4]!.name).toBe("documents");
+	expect(result[5]!.name).toBe("scripts");
 });
 
 test("sortFiles: 空の配列", () => {
 	const files: FileItem[] = [];
-	const config: FileSortConfig = { type: "name", order: "asc" };
-	const result = sortFiles(files, config);
+	const config: FileSortConfig = { sortBy: "name", order: "asc" };
+	const result = sortFilesByConfig(files, config);
 
 	expect(result).toEqual([]);
 });
@@ -111,9 +112,9 @@ test("sortFiles: 空の配列", () => {
 test("sortFiles: 純粋関数の検証（元の配列を変更しない）", () => {
 	const files = createTestFiles();
 	const originalNames = files.map((f) => f.name);
-	const config: FileSortConfig = { type: "name", order: "asc" };
+	const config: FileSortConfig = { sortBy: "name", order: "asc" };
 
-	sortFiles(files, config);
+	sortFilesByConfig(files, config);
 
 	// 元の配列は変更されない
 	expect(files.map((f) => f.name)).toEqual(originalNames);
@@ -128,13 +129,13 @@ test("sortFilesDefault: ディレクトリ優先、名前順", () => {
 	const result = sortFilesDefault(files);
 
 	// ディレクトリが最初に来る
-	expect(result[0].name).toBe("documents");
-	expect(result[1].name).toBe("scripts");
+	expect(result[0]!.name).toBe("documents");
+	expect(result[1]!.name).toBe("scripts");
 	// 残りはファイル（名前順）
-	expect(result[2].name).toBe("app.js");
-	expect(result[3].name).toBe("config.json");
-	expect(result[4].name).toBe("readme.txt");
-	expect(result[5].name).toBe("test.ts");
+	expect(result[2]!.name).toBe("app.js");
+	expect(result[3]!.name).toBe("config.json");
+	expect(result[4]!.name).toBe("readme.txt");
+	expect(result[5]!.name).toBe("test.ts");
 });
 
 test("sortFilesDefault: ファイルのみ", () => {
@@ -145,9 +146,9 @@ test("sortFilesDefault: ファイルのみ", () => {
 	];
 	const result = sortFilesDefault(files);
 
-	expect(result[0].name).toBe("a.txt");
-	expect(result[1].name).toBe("m.txt");
-	expect(result[2].name).toBe("z.txt");
+	expect(result[0]!.name).toBe("a.txt");
+	expect(result[1]!.name).toBe("m.txt");
+	expect(result[2]!.name).toBe("z.txt");
 });
 
 test("sortFilesDefault: 純粋関数の検証", () => {
@@ -169,8 +170,8 @@ test("addParentDirectory: 通常のディレクトリ", () => {
 	const result = addParentDirectory(files, "/home/user/documents");
 
 	// 最初に親ディレクトリエントリが追加される
-	expect(result[0].name).toBe("..");
-	expect(result[0].isDirectory).toBe(true);
+	expect(result[0]!.name).toBe("..");
+	expect(result[0]!.isDirectory).toBe(true);
 	expect(result.length).toBe(files.length + 1);
 });
 
@@ -180,7 +181,7 @@ test("addParentDirectory: ルートディレクトリ", () => {
 
 	// ルートディレクトリの場合は親ディレクトリを追加しない
 	expect(result.length).toBe(files.length);
-	expect(result[0].name).toBe(files[0].name);
+	expect(result[0]!.name).toBe(files[0]!.name);
 });
 
 test("addParentDirectory: 純粋関数の検証", () => {
@@ -199,14 +200,14 @@ test("addParentDirectory: 純粋関数の検証", () => {
 
 test("validateSortConfig: 有効な設定", () => {
 	const validConfigs: FileSortConfig[] = [
-		{ type: "name", order: "asc" },
-		{ type: "name", order: "desc" },
-		{ type: "size", order: "asc" },
-		{ type: "size", order: "desc" },
-		{ type: "modified", order: "asc" },
-		{ type: "modified", order: "desc" },
-		{ type: "type", order: "asc" },
-		{ type: "type", order: "desc" },
+		{ sortBy: "name", order: "asc" },
+		{ sortBy: "name", order: "desc" },
+		{ sortBy: "size", order: "asc" },
+		{ sortBy: "size", order: "desc" },
+		{ sortBy: "modified", order: "asc" },
+		{ sortBy: "modified", order: "desc" },
+		{ sortBy: "type", order: "asc" },
+		{ sortBy: "type", order: "desc" },
 	];
 
 	for (const config of validConfigs) {
@@ -215,12 +216,12 @@ test("validateSortConfig: 有効な設定", () => {
 });
 
 test("validateSortConfig: 無効なタイプ", () => {
-	const invalidConfig = { type: "invalid", order: "asc" } as FileSortConfig;
+	const invalidConfig = { sortBy: "invalid", order: "asc" } as unknown as FileSortConfig;
 	expect(validateSortConfig(invalidConfig)).toBe(false);
 });
 
 test("validateSortConfig: 無効な順序", () => {
-	const invalidConfig = { type: "name", order: "invalid" } as FileSortConfig;
+	const invalidConfig = { sortBy: "name", order: "invalid" } as unknown as FileSortConfig;
 	expect(validateSortConfig(invalidConfig)).toBe(false);
 });
 
@@ -231,7 +232,7 @@ test("validateSortConfig: 無効な順序", () => {
 test("getDefaultSortConfig: デフォルト設定", () => {
 	const result = getDefaultSortConfig();
 
-	expect(result.type).toBe("name");
+	expect(result.sortBy).toBe("name");
 	expect(result.order).toBe("asc");
 });
 
@@ -252,8 +253,8 @@ test("filterFiles: 基本的なフィルタリング", () => {
 
 	// "t"を含むファイルのみ
 	expect(result.length).toBe(2);
-	expect(result[0].name).toBe("readme.txt");
-	expect(result[1].name).toBe("test.ts");
+	expect(result[0]!.name).toBe("readme.txt");
+	expect(result[1]!.name).toBe("test.ts");
 });
 
 test("filterFiles: 空の結果", () => {
@@ -288,8 +289,8 @@ test("excludeHiddenFiles: 隠しファイルを除外", () => {
 	const result = excludeHiddenFiles(files);
 
 	expect(result.length).toBe(2);
-	expect(result[0].name).toBe("normal.txt");
-	expect(result[1].name).toBe("visible");
+	expect(result[0]!.name).toBe("normal.txt");
+	expect(result[1]!.name).toBe("visible");
 });
 
 test("excludeHiddenFiles: 親ディレクトリは除外しない", () => {
@@ -302,8 +303,8 @@ test("excludeHiddenFiles: 親ディレクトリは除外しない", () => {
 	const result = excludeHiddenFiles(files);
 
 	expect(result.length).toBe(2);
-	expect(result[0].name).toBe("normal.txt");
-	expect(result[1].name).toBe("..");
+	expect(result[0]!.name).toBe("normal.txt");
+	expect(result[1]!.name).toBe("..");
 });
 
 // ====================================================================
@@ -315,8 +316,8 @@ test("getDirectoriesOnly: ディレクトリのみを取得", () => {
 	const result = getDirectoriesOnly(files);
 
 	expect(result.length).toBe(2);
-	expect(result[0].name).toBe("documents");
-	expect(result[1].name).toBe("scripts");
+	expect(result[0]!.name).toBe("documents");
+	expect(result[1]!.name).toBe("scripts");
 	expect(result.every((file) => file.isDirectory)).toBe(true);
 });
 
@@ -339,10 +340,10 @@ test("getFilesOnly: ファイルのみを取得", () => {
 	const result = getFilesOnly(files);
 
 	expect(result.length).toBe(4);
-	expect(result[0].name).toBe("readme.txt");
-	expect(result[1].name).toBe("app.js");
-	expect(result[2].name).toBe("config.json");
-	expect(result[3].name).toBe("test.ts");
+	expect(result[0]!.name).toBe("readme.txt");
+	expect(result[1]!.name).toBe("app.js");
+	expect(result[2]!.name).toBe("config.json");
+	expect(result[3]!.name).toBe("test.ts");
 	expect(result.every((file) => !file.isDirectory)).toBe(true);
 });
 
@@ -362,13 +363,13 @@ test("sortFiles: 大量のファイルでも正常に動作", () => {
 		createFileItem(`file${i}.txt`, false, Math.random() * 10000),
 	);
 
-	const config: FileSortConfig = { type: "name", order: "asc" };
-	const result = sortFiles(files, config);
+	const config: FileSortConfig = { sortBy: "name", order: "asc" };
+	const result = sortFilesByConfig(files, config);
 
 	expect(result.length).toBe(1000);
 	// ソートが正しく行われているか確認
 	for (let i = 0; i < result.length - 1; i++) {
-		expect(result[i].name <= result[i + 1].name).toBe(true);
+		expect(result[i]!.name <= result[i + 1]!.name).toBe(true);
 	}
 });
 
@@ -381,11 +382,11 @@ test("sortFiles: 特殊文字を含むファイル名", () => {
 		createFileItem("file.with.dots.txt", false),
 	];
 
-	const config: FileSortConfig = { type: "name", order: "asc" };
-	const result = sortFiles(files, config);
+	const config: FileSortConfig = { sortBy: "name", order: "asc" };
+	const result = sortFilesByConfig(files, config);
 
 	expect(result.length).toBe(5);
-	expect(typeof result[0].name).toBe("string");
+	expect(typeof result[0]!.name).toBe("string");
 });
 
 test("filterFiles: 複雑な条件でのフィルタリング", () => {
@@ -417,8 +418,8 @@ test("excludeHiddenFiles: 様々な隠しファイルパターン", () => {
 
 	// 親ディレクトリ(..)と通常ファイルのみ残る
 	expect(result.length).toBe(2);
-	expect(result[0].name).toBe("normal.txt");
-	expect(result[1].name).toBe("..");
+	expect(result[0]!.name).toBe("normal.txt");
+	expect(result[1]!.name).toBe("..");
 });
 
 test("sortFiles: 同じ名前のファイルでも安定ソート", () => {
@@ -428,8 +429,8 @@ test("sortFiles: 同じ名前のファイルでも安定ソート", () => {
 		createFileItem("same.txt", false, 512, new Date("2023-01-03")),
 	];
 
-	const config: FileSortConfig = { type: "name", order: "asc" };
-	const result = sortFiles(files, config);
+	const config: FileSortConfig = { sortBy: "name", order: "asc" };
+	const result = sortFilesByConfig(files, config);
 
 	expect(result.length).toBe(3);
 	expect(result.every((file) => file.name === "same.txt")).toBe(true);
@@ -440,20 +441,20 @@ test("addParentDirectory: 空の配列", () => {
 	const result = addParentDirectory(files, "/home/user");
 
 	expect(result.length).toBe(1);
-	expect(result[0].name).toBe("..");
-	expect(result[0].isDirectory).toBe(true);
+	expect(result[0]!.name).toBe("..");
+	expect(result[0]!.isDirectory).toBe(true);
 });
 
 test("validateSortConfig: 境界値テスト", () => {
 	// 正常な値
-	expect(validateSortConfig({ type: "name", order: "asc" })).toBe(true);
-	expect(validateSortConfig({ type: "type", order: "desc" })).toBe(true);
+	expect(validateSortConfig({ sortBy: "name", order: "asc" })).toBe(true);
+	expect(validateSortConfig({ sortBy: "type", order: "desc" })).toBe(true);
 
 	// 無効な値
 	expect(
-		validateSortConfig({ type: "invalid", order: "asc" } as FileSortConfig),
+		validateSortConfig({ sortBy: "invalid", order: "asc" } as unknown as FileSortConfig),
 	).toBe(false);
 	expect(
-		validateSortConfig({ type: "name", order: "invalid" } as FileSortConfig),
+		validateSortConfig({ sortBy: "name", order: "invalid" } as unknown as FileSortConfig),
 	).toBe(false);
 });

@@ -1,16 +1,17 @@
 /**
- * ファイルナビゲーションReactフック
+ * ファイルナビゲーションReactフック（リファクタリング版）
  *
- * ファイルナビゲーションの状態管理と操作を担当
- * 副作用を適切に分離し、状態管理を純粋な関数として実装
+ * 依存性注入を活用し、テスタビリティを向上させた実装
+ * 副作用を適切に分離し、純粋関数として実装されたビジネスロジックを使用
  */
 
 import { useCallback, useEffect, useReducer, useRef } from "react";
-import {
-	getParentDirectory,
-	isRootDirectory,
-	readDirectoryWithCache,
-} from "../services/fileSystem.js";
+import { getGlobalServiceContainer } from "../factories/FileSystemFactory.js";
+import type {
+	CachedFileSystemService,
+	EnvironmentService,
+	PathUtilsService,
+} from "../interfaces/FileSystemService.js";
 import type {
 	FileItem,
 	FileNavigationActions,
@@ -18,12 +19,15 @@ import type {
 	FileSortConfig,
 	UseFileNavigation,
 } from "../types/index.js";
-import { addParentDirectory, getDefaultSortConfig } from "../utils/fileSort.js";
+import {
+	addParentDirectory,
+	getDefaultSortConfig,
+	sortFiles,
+} from "../utils/fileSort.js";
 import {
 	useAdvancedDebounce,
 	useOptimizedCallback,
 } from "../utils/performanceUtils.js";
-import { ParallelProcessor } from "../utils/workerPool.js";
 
 /**
  * ファイルナビゲーション状態のアクションタイプ
@@ -36,18 +40,6 @@ type FileNavigationAction =
 	| { type: "SET_ERROR"; payload: string | null }
 	| { type: "SET_SORT_CONFIG"; payload: FileSortConfig }
 	| { type: "RESET_SELECTION" };
-
-/**
- * ファイルナビゲーション状態の初期値
- */
-const initialState: FileNavigationState = {
-	currentPath: process.cwd(),
-	files: [],
-	selectedIndex: 0,
-	error: null,
-	isLoading: false,
-	sortConfig: getDefaultSortConfig(),
-};
 
 /**
  * ファイルナビゲーション状態のリデューサー
@@ -94,24 +86,94 @@ const fileNavigationReducer = (
 };
 
 /**
+ * ファイルナビゲーションフックの依存性
+ */
+export interface FileNavigationDependencies {
+	/**
+	 * ファイルシステムサービス
+	 */
+	fileSystemService: CachedFileSystemService;
+
+	/**
+	 * パス操作ユーティリティサービス
+	 */
+	pathUtilsService: PathUtilsService;
+
+	/**
+	 * 環境サービス
+	 */
+	environmentService: EnvironmentService;
+}
+
+/**
+ * ファイルナビゲーションフックのオプション
+ */
+export interface FileNavigationOptions {
+	/**
+	 * 初期パス
+	 */
+	initialPath?: string;
+
+	/**
+	 * 依存性（テスト時に注入）
+	 */
+	dependencies?: FileNavigationDependencies;
+
+	/**
+	 * デバウンス遅延時間
+	 */
+	debounceDelay?: number;
+
+	/**
+	 * 最大待機時間
+	 */
+	maxWait?: number;
+}
+
+/**
  * ファイルナビゲーションフック
  *
- * @param initialPath - 初期パス
+ * @param options - オプション
  * @returns ファイルナビゲーション状態とアクション
  */
 export const useFileNavigation = (
-	initialPath: string = process.cwd(),
-): UseFileNavigation => {
-	const [state, dispatch] = useReducer(fileNavigationReducer, {
-		...initialState,
-		currentPath: initialPath,
-	});
+	options: FileNavigationOptions = {},
+): UseFileNavigationExtended => {
+	const {
+		initialPath,
+		dependencies,
+		debounceDelay = 300,
+		maxWait = 1000,
+	} = options;
+
+	// 依存性の取得（注入されない場合はグローバルから取得）
+	const serviceContainer = getGlobalServiceContainer();
+	const deps: FileNavigationDependencies = dependencies || {
+		fileSystemService: serviceContainer.getCachedFileSystemService(),
+		pathUtilsService: serviceContainer.getPathUtilsService(),
+		environmentService: serviceContainer.getEnvironmentService(),
+	};
+
+	// 初期パスの決定
+	const resolvedInitialPath =
+		initialPath || deps.environmentService.getCurrentWorkingDirectory();
+
+	// ファイルナビゲーション状態の初期値
+	const initialState: FileNavigationState = {
+		currentPath: resolvedInitialPath,
+		files: [],
+		selectedIndex: 0,
+		error: null,
+		isLoading: false,
+		sortConfig: getDefaultSortConfig(),
+	};
+
+	const [state, dispatch] = useReducer(fileNavigationReducer, initialState);
 
 	// 現在のパスが変更されたかどうかを追跡
-	const previousPathRef = useRef<string>(initialPath);
-	const parallelProcessor = useRef<ParallelProcessor>(new ParallelProcessor());
+	const previousPathRef = useRef<string>(resolvedInitialPath);
 
-	// ファイルリストを読み込む関数（デバウンス付き）
+	// ファイルリストを読み込む関数（純粋関数を使用）
 	const loadFiles = useOptimizedCallback(
 		async (path: string) => {
 			dispatch({ type: "SET_LOADING", payload: true });
@@ -119,17 +181,18 @@ export const useFileNavigation = (
 
 			try {
 				// キャッシュ付きで読み込み
-				const result = await readDirectoryWithCache(path);
+				const result =
+					await deps.fileSystemService.readDirectoryWithCache(path);
 
 				if (result.success && result.data) {
-					// 並列処理でファイルをソート
-					const sortedFiles = await parallelProcessor.current.sortFiles(
+					// 純粋関数でファイルをソート
+					const sortedFiles = sortFiles(
 						result.data,
 						state.sortConfig.sortBy,
 						state.sortConfig.order,
 					);
 
-					// 親ディレクトリエントリを追加
+					// 純粋関数で親ディレクトリエントリを追加
 					const filesWithParent = addParentDirectory(sortedFiles, path);
 
 					dispatch({ type: "SET_FILES", payload: filesWithParent });
@@ -156,14 +219,14 @@ export const useFileNavigation = (
 				dispatch({ type: "SET_LOADING", payload: false });
 			}
 		},
-		[state.sortConfig.sortBy, state.sortConfig.order],
+		[deps.fileSystemService, state.sortConfig.sortBy, state.sortConfig.order],
 	);
 
 	// デバウンス処理を適用
-	const debouncedLoadFiles = useAdvancedDebounce(loadFiles, 300, {
+	const debouncedLoadFiles = useAdvancedDebounce(loadFiles, debounceDelay, {
 		leading: true,
 		trailing: false,
-		maxWait: 1000,
+		maxWait,
 	});
 
 	// 初回読み込みとパス変更時の処理
@@ -182,11 +245,13 @@ export const useFileNavigation = (
 	 * 親ディレクトリに移動する
 	 */
 	const navigateUp = useCallback(async () => {
-		if (!isRootDirectory(state.currentPath)) {
-			const parentPath = getParentDirectory(state.currentPath);
+		if (!deps.pathUtilsService.isRootDirectory(state.currentPath)) {
+			const parentPath = deps.pathUtilsService.getParentDirectory(
+				state.currentPath,
+			);
 			dispatch({ type: "SET_CURRENT_PATH", payload: parentPath });
 		}
-	}, [state.currentPath]);
+	}, [state.currentPath, deps.pathUtilsService]);
 
 	/**
 	 * ファイルを選択する
@@ -253,10 +318,16 @@ export const useFileNavigation = (
 		return {
 			prevFile: prevIndex !== null ? state.files[prevIndex] : null,
 			nextFile: nextIndex !== null ? state.files[nextIndex] : null,
-			canGoUp: !isRootDirectory(state.currentPath),
+			canGoUp: !deps.pathUtilsService.isRootDirectory(state.currentPath),
 			currentFile: getSelectedFile(),
 		};
-	}, [state.selectedIndex, state.files, state.currentPath, getSelectedFile]);
+	}, [
+		state.selectedIndex,
+		state.files,
+		state.currentPath,
+		getSelectedFile,
+		deps.pathUtilsService,
+	]);
 
 	/**
 	 * ファイルナビゲーションの統計情報を取得する
@@ -276,6 +347,20 @@ export const useFileNavigation = (
 		};
 	}, [state.files]);
 
+	/**
+	 * キャッシュの統計情報を取得する
+	 */
+	const getCacheStats = useCallback(() => {
+		return deps.fileSystemService.getCacheStats();
+	}, [deps.fileSystemService]);
+
+	/**
+	 * キャッシュをクリアする
+	 */
+	const clearCache = useCallback(() => {
+		deps.fileSystemService.clearCache();
+	}, [deps.fileSystemService]);
+
 	const actions: FileNavigationActions = {
 		navigateToDirectory,
 		navigateUp,
@@ -293,7 +378,9 @@ export const useFileNavigation = (
 		getSelectedFile,
 		getNavigationInfo,
 		getStats,
-	} as UseFileNavigationExtended;
+		getCacheStats,
+		clearCache,
+	};
 };
 
 /**
@@ -313,6 +400,11 @@ export interface UseFileNavigationExtended extends UseFileNavigation {
 		totalSize: number;
 		totalItems: number;
 	};
+	getCacheStats: () => {
+		size: number;
+		memoryUsage: number;
+	};
+	clearCache: () => void;
 }
 
 /**
@@ -406,4 +498,21 @@ export const useFileNavigationPersistence = (
 			console.warn("Failed to restore file navigation state:", error);
 		}
 	}, [actions, storageKey]);
+};
+
+/**
+ * テスト用のファイルナビゲーションフック作成
+ *
+ * @param dependencies - テスト用の依存性
+ * @param options - オプション
+ * @returns テスト用のファイルナビゲーション
+ */
+export const createTestFileNavigation = (
+	dependencies: FileNavigationDependencies,
+	options: Omit<FileNavigationOptions, "dependencies"> = {},
+): UseFileNavigationExtended => {
+	return useFileNavigation({
+		...options,
+		dependencies,
+	});
 };
