@@ -185,15 +185,15 @@ export const useFileNavigation = (
 	 * Move selection up
 	 */
 	const moveUp = useCallback(() => {
-		dispatch({ type: "SET_SELECTED_INDEX", index: state.selectedIndex - 1 });
-	}, [state.selectedIndex]);
+		dispatch({ type: "SET_SELECTED_INDEX", index: Math.max(0, state.selectedIndex - 1) });
+	}, []);
 
 	/**
 	 * Move selection down
 	 */
 	const moveDown = useCallback(() => {
-		dispatch({ type: "SET_SELECTED_INDEX", index: state.selectedIndex + 1 });
-	}, [state.selectedIndex]);
+		dispatch({ type: "SET_SELECTED_INDEX", index: Math.min(state.files.length - 1, state.selectedIndex + 1) });
+	}, []);
 
 	/**
 	 * Enter selected item (directory or file)
@@ -206,7 +206,7 @@ export const useFileNavigation = (
 			await loadDirectory(selectedFile.path);
 		}
 		// File preview logic will be added later
-	}, [state.files, state.selectedIndex, loadDirectory]);
+	}, [loadDirectory]);
 
 	/**
 	 * Go to parent directory
@@ -218,7 +218,7 @@ export const useFileNavigation = (
 		if (parentResult.ok) {
 			await loadDirectory(parentResult.value);
 		}
-	}, [deps.fileSystemService, state.currentPath, loadDirectory]);
+	}, [deps.fileSystemService, loadDirectory]);
 
 	/**
 	 * Set sort configuration
@@ -239,7 +239,7 @@ export const useFileNavigation = (
 	 */
 	useEffect(() => {
 		loadDirectory(initialPath);
-	}, [initialPath, loadDirectory]);
+	}, []);
 
 	return {
 		state,
