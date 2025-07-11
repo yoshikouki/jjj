@@ -127,5 +127,17 @@ export const useKeyboardInput = ({
 		createFilterHandler(navigation.actions, navigation.state.filterOptions),
 	);
 
-	useInput(keyHandler);
+	// Check if raw mode is supported
+	const isRawModeSupported = process.stdin.isTTY && typeof process.stdin.setRawMode === 'function';
+	
+	if (!isRawModeSupported) {
+		// In environments without raw mode support, provide basic keyboard simulation
+		return;
+	}
+
+	try {
+		useInput(keyHandler);
+	} catch (error) {
+		console.warn("⚠️ Keyboard input not available:", error);
+	}
 };
