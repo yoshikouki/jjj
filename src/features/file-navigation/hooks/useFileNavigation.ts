@@ -69,13 +69,19 @@ const navigationReducer = (
 		case "MOVE_UP":
 			return {
 				...state,
-				selectedIndex: Math.max(0, state.selectedIndex - 1),
+				selectedIndex:
+					state.selectedIndex === 0
+						? state.files.length - 1
+						: state.selectedIndex - 1,
 			};
 
 		case "MOVE_DOWN":
 			return {
 				...state,
-				selectedIndex: Math.min(state.files.length - 1, state.selectedIndex + 1),
+				selectedIndex:
+					state.selectedIndex === state.files.length - 1
+						? 0
+						: state.selectedIndex + 1,
 			};
 
 		case "SET_SORT_CONFIG": {

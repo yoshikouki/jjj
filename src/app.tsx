@@ -6,7 +6,10 @@
 import { Box, Text, useApp } from "ink";
 import React from "react";
 import { FileList } from "./features/file-navigation/components/FileList.js";
+import { createDependencies } from "./features/file-navigation/factories/ServiceFactory.js";
 import { useFileNavigation } from "./features/file-navigation/hooks/useFileNavigation.js";
+import { PreviewPanel } from "./features/file-preview/components/PreviewPanel.js";
+import { useFilePreview } from "./features/file-preview/hooks/useFilePreview.js";
 import { useKeyboardInput } from "./features/keyboard-input/hooks/useKeyboardInput.js";
 import { StatusBar } from "./features/terminal-ui/components/StatusBar.js";
 import { useTerminalSize } from "./features/terminal-ui/hooks/useTerminalSize.js";
@@ -17,11 +20,14 @@ import { useTerminalSize } from "./features/terminal-ui/hooks/useTerminalSize.js
 export const App: React.FC = () => {
 	const { exit } = useApp();
 	const terminalSize = useTerminalSize();
-	const navigation = useFileNavigation();
+	const dependencies = React.useMemo(() => createDependencies(), []);
+	const navigation = useFileNavigation({ dependencies });
+	const preview = useFilePreview({ dependencies });
 
 	// Setup keyboard input handling
 	useKeyboardInput({
 		navigation,
+		preview,
 		onExit: exit,
 	});
 
@@ -51,6 +57,18 @@ export const App: React.FC = () => {
 		);
 	}
 
+	// Show full-screen preview when in preview mode
+	if (preview.state.isVisible) {
+		return (
+			<PreviewPanel
+				state={preview.state}
+				width={terminalSize.width}
+				height={terminalSize.height}
+			/>
+		);
+	}
+
+	// Normal file navigation view
 	return (
 		<Box flexDirection="column" height={terminalSize.height}>
 			{/* Main file list */}
@@ -59,7 +77,7 @@ export const App: React.FC = () => {
 					files={navigation.state.files}
 					selectedIndex={navigation.state.selectedIndex}
 					terminalWidth={terminalSize.width}
-					terminalHeight={terminalSize.height}
+					terminalHeight={terminalSize.height - 1} // Account for status bar
 				/>
 			</Box>
 
