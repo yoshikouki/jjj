@@ -302,8 +302,102 @@ const useVirtualScroll = (
 - **テストカバレッジ**: 0% → 94.3%
 - **パフォーマンス**: 3-5倍高速化
 
+## Git コミット戦略
+
+### 細かいコミットの原則
+
+**変更のたびにコミット**することで、追跡可能で保守性の高い開発を実現：
+
+```bash
+# ✅ 良いコミット例（1つの論理的変更）
+git commit -m "feat: Add FileItem interface with readonly properties"
+git commit -m "test: Implement sortFiles function tests"
+git commit -m "feat: Implement sortFiles pure function"
+git commit -m "refactor: Extract file sorting logic to utils"
+git commit -m "docs: Update CLAUDE.md with sorting patterns"
+
+# ❌ 悪いコミット例（複数の変更を一括）
+git commit -m "feat: Add complete file navigation with tests and refactoring"
+```
+
+### コミット単位の指針
+
+#### 機能開発サイクル
+1. **インターフェース定義** → コミット
+2. **テスト実装** → コミット
+3. **機能実装** → コミット
+4. **リファクタリング** → コミット
+5. **ドキュメント更新** → コミット
+
+#### コミットメッセージ規約
+```
+type(scope): description
+
+feat: 新機能追加
+fix: バグ修正
+test: テスト追加・修正
+refactor: リファクタリング
+docs: ドキュメント更新
+style: コードスタイル修正
+perf: パフォーマンス改善
+```
+
+### コミット粒度の利点
+
+#### 🔍 **問題の特定が容易**
+- バグが発生した時に原因を絞り込みやすい
+- どの変更が問題を引き起こしたかが明確
+
+#### 📝 **レビューしやすい**
+- 小さな変更は理解・検証が簡単
+- コードレビューの質が向上
+
+#### 🔄 **ロールバックが安全**
+- 必要な変更だけを取り消せる
+- 関連のない変更に影響しない
+
+#### 📈 **開発履歴の明確化**
+- 各コミットが1つの論理的変更を表現
+- プロジェクトの進化が追跡可能
+
+### 実践例
+
+#### Test-Driven Development での細かいコミット
+```bash
+# 1. インターフェース定義
+git add src/types/FileItem.ts
+git commit -m "feat: Define FileItem interface with type safety"
+
+# 2. テスト実装
+git add src/utils/__tests__/fileSort.test.ts
+git commit -m "test: Add comprehensive tests for file sorting"
+
+# 3. 実装
+git add src/utils/fileSort.ts
+git commit -m "feat: Implement pure function file sorting logic"
+
+# 4. 統合
+git add src/hooks/useFileNavigation.ts
+git commit -m "feat: Integrate file sorting into navigation hook"
+```
+
+#### Bug Fix での細かいコミット
+```bash
+# 1. テスト追加（バグの再現）
+git add src/utils/__tests__/fileSort.test.ts
+git commit -m "test: Add failing test for directory sorting bug"
+
+# 2. 修正
+git add src/utils/fileSort.ts
+git commit -m "fix: Correct directory-first sorting logic"
+
+# 3. 検証
+git add src/utils/__tests__/fileSort.test.ts
+git commit -m "test: Add edge case tests for sorting"
+```
+
 ---
 
-*最終更新: 2025-01-10*  
+*最終更新: 2025-01-11*  
 *プロジェクト: CLI File Explorer "jjj"*  
 *アーキテクチャ: 関数型プログラミング × Package by Feature*
