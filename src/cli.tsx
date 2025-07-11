@@ -1,29 +1,3 @@
-#!/usr/bin/env node
-import React from "react";
-import { render } from "ink";
-import meow from "meow";
-import App from "./app.js";
-
-meow(
-	`
-	Usage
-	  $ jjj
-
-	A mobile-friendly CLI file explorer
-
-	Controls:
-	  ↑/↓     Navigate files
-	  ←/→     Navigate directories/Preview files
-	  Space   Toggle preview
-	  Enter   Open directory or toggle preview
-	  q       Quit
-
-	Examples
-	  $ jjj
-`,
-	{
-		importMeta: import.meta,
-	},
-);
-
-render(<App />);
+#!/usr/bin/env bun
+// Temporary placeholder for fresh implementation
+console.log("Ready for quality-first implementation");
