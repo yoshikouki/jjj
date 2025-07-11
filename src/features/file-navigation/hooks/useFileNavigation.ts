@@ -22,6 +22,8 @@ type NavigationAction =
 	| { type: "SET_FILES"; files: readonly FileItem[]; path: string }
 	| { type: "SET_ERROR"; error: string }
 	| { type: "SET_SELECTED_INDEX"; index: number }
+	| { type: "MOVE_UP" }
+	| { type: "MOVE_DOWN" }
 	| { type: "SET_SORT_CONFIG"; config: SortConfig }
 	| { type: "SET_FILTER_OPTIONS"; options: FilterOptions };
 
@@ -62,6 +64,18 @@ const navigationReducer = (
 					0,
 					Math.min(action.index, state.files.length - 1),
 				),
+			};
+
+		case "MOVE_UP":
+			return {
+				...state,
+				selectedIndex: Math.max(0, state.selectedIndex - 1),
+			};
+
+		case "MOVE_DOWN":
+			return {
+				...state,
+				selectedIndex: Math.min(state.files.length - 1, state.selectedIndex + 1),
 			};
 
 		case "SET_SORT_CONFIG": {
@@ -185,28 +199,30 @@ export const useFileNavigation = (
 	 * Move selection up
 	 */
 	const moveUp = useCallback(() => {
-		dispatch({ type: "SET_SELECTED_INDEX", index: Math.max(0, state.selectedIndex - 1) });
+		dispatch({ type: "MOVE_UP" });
 	}, []);
 
 	/**
 	 * Move selection down
 	 */
 	const moveDown = useCallback(() => {
-		dispatch({ type: "SET_SELECTED_INDEX", index: Math.min(state.files.length - 1, state.selectedIndex + 1) });
+		dispatch({ type: "MOVE_DOWN" });
 	}, []);
 
 	/**
 	 * Enter selected item (directory or file)
 	 */
 	const enterSelectedItem = useCallback(async () => {
-		const selectedFile = state.files[state.selectedIndex];
+		// Get current state values through dispatch
+		const currentState = state;
+		const selectedFile = currentState.files[currentState.selectedIndex];
 		if (!selectedFile) return;
 
 		if (selectedFile.type === "directory") {
 			await loadDirectory(selectedFile.path);
 		}
 		// File preview logic will be added later
-	}, [loadDirectory]);
+	}, [loadDirectory, state]);
 
 	/**
 	 * Go to parent directory
@@ -218,7 +234,7 @@ export const useFileNavigation = (
 		if (parentResult.ok) {
 			await loadDirectory(parentResult.value);
 		}
-	}, [deps.fileSystemService, loadDirectory]);
+	}, [deps.fileSystemService, loadDirectory, state.currentPath]);
 
 	/**
 	 * Set sort configuration
