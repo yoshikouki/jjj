@@ -3,7 +3,6 @@
  * Immutable data structures following functional programming principles
  */
 
-
 /**
  * File type enumeration
  */
