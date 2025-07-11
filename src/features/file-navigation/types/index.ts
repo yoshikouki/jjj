@@ -3,7 +3,6 @@
  * Immutable data structures following functional programming principles
  */
 
-import type { DeepReadonly } from "../../../shared/types/common.js";
 
 /**
  * File type enumeration
@@ -94,5 +93,6 @@ export interface NavigationState {
 
 /**
  * Type-safe state for making invalid states unrepresentable
+ * FileItem is already readonly, so we use NavigationState directly
  */
-export type FileNavigationState = DeepReadonly<NavigationState>;
+export type FileNavigationState = NavigationState;
