@@ -6,6 +6,27 @@
 import type { FileItem } from "../../file-navigation/types/index.js";
 
 /**
+ * Preview display options
+ */
+export interface PreviewDisplayOptions {
+	/** Show line numbers */
+	readonly showLineNumbers: boolean;
+	/** Show file info in header */
+	readonly showFileInfo: boolean;
+	/** Word wrap mode */
+	readonly wordWrap: boolean;
+}
+
+/**
+ * Default display options
+ */
+export const DEFAULT_DISPLAY_OPTIONS: PreviewDisplayOptions = {
+	showLineNumbers: true,
+	showFileInfo: true,
+	wordWrap: false,
+};
+
+/**
  * Preview state
  */
 export interface PreviewState {
@@ -21,6 +42,8 @@ export interface PreviewState {
 	readonly isVisible: boolean;
 	/** Current scroll position */
 	readonly scrollOffset: number;
+	/** Display options */
+	readonly displayOptions: PreviewDisplayOptions;
 }
 
 /**

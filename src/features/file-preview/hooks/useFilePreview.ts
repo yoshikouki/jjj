@@ -6,8 +6,8 @@
 import { useCallback, useReducer } from "react";
 import type { Dependencies } from "../../file-navigation/factories/ServiceFactory.js";
 import { type FileItem, FileType } from "../../file-navigation/types/index.js";
-import type { PreviewState } from "../types/index.js";
-import { DEFAULT_PREVIEW_CONFIG } from "../types/index.js";
+import type { PreviewState, PreviewDisplayOptions } from "../types/index.js";
+import { DEFAULT_PREVIEW_CONFIG, DEFAULT_DISPLAY_OPTIONS } from "../types/index.js";
 
 /**
  * Preview actions
@@ -21,7 +21,9 @@ type PreviewAction =
 	| { type: "TOGGLE_PREVIEW"; file: FileItem }
 	| { type: "SCROLL_UP"; lines: number }
 	| { type: "SCROLL_DOWN"; lines: number }
-	| { type: "RESET_SCROLL" };
+	| { type: "RESET_SCROLL" }
+	| { type: "TOGGLE_LINE_NUMBERS" }
+	| { type: "SET_DISPLAY_OPTIONS"; options: PreviewDisplayOptions };
 
 /**
  * Initial preview state
@@ -33,6 +35,7 @@ const initialState: PreviewState = {
 	error: null,
 	isVisible: false,
 	scrollOffset: 0,
+	displayOptions: DEFAULT_DISPLAY_OPTIONS,
 };
 
 /**
@@ -128,6 +131,21 @@ const previewReducer = (
 				scrollOffset: 0,
 			};
 
+		case "TOGGLE_LINE_NUMBERS":
+			return {
+				...state,
+				displayOptions: {
+					...state.displayOptions,
+					showLineNumbers: !state.displayOptions.showLineNumbers,
+				},
+			};
+
+		case "SET_DISPLAY_OPTIONS":
+			return {
+				...state,
+				displayOptions: action.options,
+			};
+
 		default:
 			return state;
 	}
@@ -166,6 +184,8 @@ export interface UseFilePreviewReturn {
 		togglePreview: (file: FileItem) => Promise<void>;
 		scrollUp: () => void;
 		scrollDown: () => void;
+		toggleLineNumbers: () => void;
+		setDisplayOptions: (options: PreviewDisplayOptions) => void;
 	};
 }
 
@@ -239,6 +259,14 @@ export const useFilePreview = ({
 		dispatch({ type: "SCROLL_DOWN", lines: 5 });
 	}, []);
 
+	const toggleLineNumbers = useCallback(() => {
+		dispatch({ type: "TOGGLE_LINE_NUMBERS" });
+	}, []);
+
+	const setDisplayOptions = useCallback((options: PreviewDisplayOptions) => {
+		dispatch({ type: "SET_DISPLAY_OPTIONS", options });
+	}, []);
+
 	return {
 		state,
 		actions: {
@@ -247,6 +275,8 @@ export const useFilePreview = ({
 			togglePreview,
 			scrollUp,
 			scrollDown,
+			toggleLineNumbers,
+			setDisplayOptions,
 		},
 	};
 };

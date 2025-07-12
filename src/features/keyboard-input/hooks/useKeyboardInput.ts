@@ -145,6 +145,9 @@ const createPreviewHandler = (
 			} else if (key.downArrow) {
 				preview.actions.scrollDown();
 				return; // Prevent other handlers from processing
+			} else if (input === "l" || input === "L") {
+				preview.actions.toggleLineNumbers();
+				return; // Prevent other handlers from processing
 			}
 		}
 	};

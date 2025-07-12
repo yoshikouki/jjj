@@ -4,7 +4,7 @@
  */
 
 import { Box, Text } from "ink";
-import type React from "react";
+import React from "react";
 import type { PreviewState } from "../types/index.js";
 
 /**
@@ -29,28 +29,68 @@ const formatFileSize = (bytes: number): string => {
 };
 
 /**
- * Get visible content lines with scroll offset
+ * Calculate line number width based on total lines
+ */
+const calculateLineNumberWidth = (totalLines: number): number => {
+	return Math.max(3, totalLines.toString().length + 1);
+};
+
+/**
+ * Format line with optional line number
+ */
+const formatLineWithNumber = (
+	line: string,
+	lineNumber: number,
+	lineNumberWidth: number,
+	showLineNumbers: boolean,
+): string => {
+	if (!showLineNumbers) return line;
+	
+	const paddedNumber = lineNumber.toString().padStart(lineNumberWidth - 1, " ");
+	return `${paddedNumber} │ ${line}`;
+};
+
+/**
+ * Get visible content lines with scroll offset and line numbers
  */
 const getVisibleContent = (
 	content: string,
 	scrollOffset: number,
 	maxLines: number,
+	showLineNumbers: boolean,
 ): string[] => {
 	const lines = content.split("\n");
-	const visibleLines = lines.slice(scrollOffset, scrollOffset + maxLines);
-
+	const totalLines = lines.length;
+	const lineNumberWidth = calculateLineNumberWidth(totalLines);
+	
+	let visibleLines = lines.slice(scrollOffset, scrollOffset + maxLines);
+	
 	// Add scroll indicators if needed
-	if (scrollOffset > 0 && lines.length > maxLines) {
-		visibleLines[0] = `↑ (${scrollOffset} lines above)`;
+	if (scrollOffset > 0 && totalLines > maxLines) {
+		const indicator = `↑ (${scrollOffset} lines above)`;
+		visibleLines[0] = showLineNumbers 
+			? formatLineWithNumber(indicator, scrollOffset + 1, lineNumberWidth, false)
+			: indicator;
 	}
-
-	if (scrollOffset + maxLines < lines.length) {
-		visibleLines[visibleLines.length - 1] = `↓ (${
-			lines.length - scrollOffset - maxLines
-		} lines below)`;
+	
+	if (scrollOffset + maxLines < totalLines) {
+		const remainingLines = totalLines - scrollOffset - maxLines;
+		const indicator = `↓ (${remainingLines} lines below)`;
+		const indicatorIndex = visibleLines.length - 1;
+		visibleLines[indicatorIndex] = showLineNumbers
+			? formatLineWithNumber(indicator, scrollOffset + maxLines, lineNumberWidth, false) 
+			: indicator;
 	}
-
-	return visibleLines;
+	
+	// Apply line numbers to regular lines
+	return visibleLines.map((line, index) => {
+		const lineNumber = scrollOffset + index + 1;
+		const isIndicator = (scrollOffset > 0 && index === 0) || 
+						   (scrollOffset + maxLines < totalLines && index === visibleLines.length - 1);
+		
+		if (isIndicator) return line; // Already formatted
+		return formatLineWithNumber(line, lineNumber, lineNumberWidth, showLineNumbers);
+	});
 };
 
 /**
@@ -78,6 +118,12 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
 			>
 				<Text color="cyan" bold>
 					📄 {state.file?.name || "Unknown"}
+					{state.content && (
+						<Text color="gray">
+							{" "}| {state.content.split("\n").length} lines
+							{state.displayOptions.showLineNumbers ? " | Line #: ON" : " | Line #: OFF"}
+						</Text>
+					)}
 				</Text>
 				{state.file && (
 					<Text color="gray">{formatFileSize(state.file.size)}</Text>
@@ -104,6 +150,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
 							state.content,
 							state.scrollOffset,
 							contentHeight,
+							state.displayOptions.showLineNumbers,
 						).map((line, index) => (
 							<Text key={index} wrap="truncate">
 								{line}
@@ -115,7 +162,9 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
 
 			{/* Footer */}
 			<Box borderStyle="single" borderColor="gray" paddingX={1}>
-				<Text color="gray">[ESC/Space/Enter] Close [↑↓] Scroll [q] Quit</Text>
+				<Text color="gray">
+					[ESC/Space/Enter] Close  [↑↓] Scroll  [L] Line numbers  [q] Quit
+				</Text>
 			</Box>
 		</Box>
 	);
