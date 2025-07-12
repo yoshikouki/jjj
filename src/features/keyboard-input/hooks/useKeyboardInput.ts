@@ -39,7 +39,7 @@ const createNavigationHandler = (
 			navigation.moveUp();
 		} else if (key.downArrow) {
 			navigation.moveDown();
-		} else if (key.leftArrow) {
+		} else if (key.leftArrow || key.delete) {
 			navigation.goToParent();
 		} else if (key.rightArrow) {
 			navigation.enterSelectedItem();
@@ -128,10 +128,10 @@ const createPreviewHandler = (
 			}
 		}
 
-		// Close preview with Escape, Enter or Space (when preview is visible)
+		// Close preview with Escape, Enter, Space or Delete (when preview is visible)
 		if (
 			preview.state.isVisible &&
-			(key.escape || key.return || input === " ")
+			(key.escape || key.return || input === " " || key.delete)
 		) {
 			preview.actions.hidePreview();
 			return; // Prevent other handlers from processing

@@ -16,12 +16,14 @@ interface StatusBarProps {
  * Get responsive keyboard shortcuts text
  */
 const getShortcutsText = (width: number): string => {
-	if (width > 100) {
-		return "↑↓: Navigate | ←→: Dir/Enter | h: Hidden | n/s/d/t: Sort | q: Quit";
+	if (width > 120) {
+		return "↑↓: Navigate | ←/Del: Back | →: Dir | h: Hidden | n/s/d/t: Sort | q: Quit";
+	} else if (width > 80) {
+		return "↑↓: Navigate | ←/Del: Back | →: Dir | h: Hidden | q: Quit";
 	} else if (width > 60) {
-		return "↑↓: Navigate | ←→: Dir | h: Hidden | q: Quit";
+		return "↑↓: Navigate | ←/Del: Back | →: Dir | q: Quit";
 	} else {
-		return "↑↓←→ h q";
+		return "↑↓←→ Del h q";
 	}
 };
 

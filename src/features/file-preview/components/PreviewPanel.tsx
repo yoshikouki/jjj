@@ -163,7 +163,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
 			{/* Footer */}
 			<Box borderStyle="single" borderColor="gray" paddingX={1}>
 				<Text color="gray">
-					[ESC/Space/Enter] Close  [↑↓] Scroll  [L] Line numbers  [q] Quit
+					[ESC/Space/Enter/Del] Close  [↑↓] Scroll  [L] Line numbers  [q] Quit
 				</Text>
 			</Box>
 		</Box>
