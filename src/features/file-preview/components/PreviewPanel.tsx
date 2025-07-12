@@ -103,31 +103,38 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
 }) => {
 	if (!state.isVisible) return null;
 
-	// Calculate available content height (minus header and footer)
-	const contentHeight = height - 3;
+	// Calculate available content height 
+	// Header: 1 line (border) + 1-2 lines (content) = ~3 lines
+	// Footer: 1 line (border) + 1 line (content) = 2 lines
+	// Total overhead: ~5 lines
+	const contentHeight = Math.max(1, height - 5);
 	const contentWidth = width - 4;
 
 	return (
 		<Box flexDirection="column" width={width} height={height}>
 			{/* Header */}
 			<Box
-				justifyContent="space-between"
 				borderStyle="single"
 				borderColor="cyan"
 				paddingX={1}
+				height={3}
 			>
-				<Text color="cyan" bold>
-					📄 {state.file?.name || "Unknown"}
-					{state.content && (
-						<Text color="gray">
-							{" "}| {state.content.split("\n").length} lines
-							{state.displayOptions.showLineNumbers ? " | Line #: ON" : " | Line #: OFF"}
+				<Box justifyContent="space-between" width="100%">
+					<Box flexDirection="column">
+						<Text color="cyan" bold>
+							📄 {state.file?.name || "Unknown"}
 						</Text>
+						{state.content && (
+							<Text color="gray">
+								{state.content.split("\n").length} lines
+								{state.displayOptions.showLineNumbers ? " | Line #: ON" : " | Line #: OFF"}
+							</Text>
+						)}
+					</Box>
+					{state.file && (
+						<Text color="gray">{formatFileSize(state.file.size)}</Text>
 					)}
-				</Text>
-				{state.file && (
-					<Text color="gray">{formatFileSize(state.file.size)}</Text>
-				)}
+				</Box>
 			</Box>
 
 			{/* Content */}
@@ -161,7 +168,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
 			</Box>
 
 			{/* Footer */}
-			<Box borderStyle="single" borderColor="gray" paddingX={1}>
+			<Box borderStyle="single" borderColor="gray" paddingX={1} height={2}>
 				<Text color="gray">
 					[ESC/Space/Enter/Del] Close  [↑↓] Scroll  [L] Line numbers  [q] Quit
 				</Text>
