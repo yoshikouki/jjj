@@ -26,7 +26,7 @@ export const createFileSystemService = (
 	options?: ServiceOptions,
 ): FileSystemService => {
 	const isTest =
-		process.env.NODE_ENV === "test" || process.env["BUN_ENV"] === "test";
+		process.env.NODE_ENV === "test" || process.env.BUN_ENV === "test";
 	const useMocks = options?.useMocks ?? isTest;
 
 	if (useMocks) {
@@ -46,7 +46,7 @@ export const createEnvironmentService = (
 	options?: ServiceOptions,
 ): EnvironmentService => {
 	const isTest =
-		process.env.NODE_ENV === "test" || process.env["BUN_ENV"] === "test";
+		process.env.NODE_ENV === "test" || process.env.BUN_ENV === "test";
 	const useMocks = options?.useMocks ?? isTest;
 
 	if (useMocks) {

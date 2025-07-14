@@ -34,7 +34,7 @@ export class NodeEnvironmentService implements EnvironmentService {
 	}
 
 	isTestEnvironment(): boolean {
-		return process.env.NODE_ENV === "test" || process.env["BUN_ENV"] === "test";
+		return process.env.NODE_ENV === "test" || process.env.BUN_ENV === "test";
 	}
 
 	getEnv(key: string): string | undefined {

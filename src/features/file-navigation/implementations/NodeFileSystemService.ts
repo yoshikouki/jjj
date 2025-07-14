@@ -150,7 +150,7 @@ export class NodeFileSystemService implements FileSystemService {
 		try {
 			// Handle home directory
 			if (path.startsWith("~")) {
-				const home = process.env["HOME"] || process.env["USERPROFILE"] || "/";
+				const home = process.env.HOME || process.env.USERPROFILE || "/";
 				path = path.replace("~", home);
 			}
 

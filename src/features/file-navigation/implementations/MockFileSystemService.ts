@@ -256,7 +256,7 @@ export class MockFileSystemService implements FileSystemService {
 		}
 
 		segments.pop();
-		return Ok("/" + segments.join("/"));
+		return Ok(`/${segments.join("/")}`);
 	}
 
 	joinPath(...segments: string[]): string {

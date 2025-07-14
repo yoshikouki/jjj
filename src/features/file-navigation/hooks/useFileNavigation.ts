@@ -259,6 +259,7 @@ export const useFileNavigation = (
 	/**
 	 * Load initial directory on mount
 	 */
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Only run once on mount
 	useEffect(() => {
 		loadDirectory(initialPath);
 	}, []);

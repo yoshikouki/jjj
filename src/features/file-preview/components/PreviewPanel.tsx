@@ -173,7 +173,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
 							contentHeight,
 							state.displayOptions.showLineNumbers,
 						).map((line, index) => (
-							<Text key={index} wrap="truncate">
+							<Text key={`line-${state.scrollOffset + index}`} wrap="truncate">
 								{line}
 							</Text>
 						))}
