@@ -6,8 +6,11 @@
 import { useCallback, useReducer } from "react";
 import type { Dependencies } from "../../file-navigation/factories/ServiceFactory.js";
 import { type FileItem, FileType } from "../../file-navigation/types/index.js";
-import type { PreviewState, PreviewDisplayOptions } from "../types/index.js";
-import { DEFAULT_PREVIEW_CONFIG, DEFAULT_DISPLAY_OPTIONS } from "../types/index.js";
+import type { PreviewDisplayOptions, PreviewState } from "../types/index.js";
+import {
+	DEFAULT_DISPLAY_OPTIONS,
+	DEFAULT_PREVIEW_CONFIG,
+} from "../types/index.js";
 
 /**
  * Preview actions
