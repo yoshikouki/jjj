@@ -37,28 +37,24 @@ export const useSelectedIndex = (initialIndex = 0): UseSelectedIndexReturn => {
 	}, []);
 
 	/**
-	 * Move selection up with wrap-around (RAF-synchronized)
+	 * Move selection up with wrap-around
 	 */
 	const moveUp = useCallback((totalFiles: number) => {
 		lastTotalFiles.current = totalFiles;
-		requestAnimationFrame(() => {
-			setSelectedIndexState((prev) => {
-				if (totalFiles === 0) return 0;
-				return prev === 0 ? totalFiles - 1 : prev - 1;
-			});
+		setSelectedIndexState((prev) => {
+			if (totalFiles === 0) return 0;
+			return prev === 0 ? totalFiles - 1 : prev - 1;
 		});
 	}, []);
 
 	/**
-	 * Move selection down with wrap-around (RAF-synchronized)
+	 * Move selection down with wrap-around
 	 */
 	const moveDown = useCallback((totalFiles: number) => {
 		lastTotalFiles.current = totalFiles;
-		requestAnimationFrame(() => {
-			setSelectedIndexState((prev) => {
-				if (totalFiles === 0) return 0;
-				return prev === totalFiles - 1 ? 0 : prev + 1;
-			});
+		setSelectedIndexState((prev) => {
+			if (totalFiles === 0) return 0;
+			return prev === totalFiles - 1 ? 0 : prev + 1;
 		});
 	}, []);
 
