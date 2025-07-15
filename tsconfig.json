@@ -5,7 +5,8 @@
 		"esModuleInterop": true,
 		"allowSyntheticDefaultImports": true,
 		"moduleResolution": "Node16",
-		"noPropertyAccessFromIndexSignature": false
+		"noPropertyAccessFromIndexSignature": false,
+		"jsx": "react-jsx"
 	},
 	"include": ["src"],
 	"ts-node": {
