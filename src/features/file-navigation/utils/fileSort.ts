@@ -186,3 +186,18 @@ export const findFileIndex = (
 ): number => {
 	return files.findIndex((file) => file.path === path);
 };
+
+/**
+ * Async version of processFiles for non-blocking operations
+ * Yields control back to the browser to prevent UI blocking
+ */
+export const processFilesAsync = async (
+	files: readonly FileItem[],
+	sortConfig: SortConfig,
+	filterOptions: FilterOptions,
+): Promise<readonly FileItem[]> => {
+	// Use scheduler to yield control back to the browser
+	await new Promise((resolve) => setTimeout(resolve, 0));
+
+	return processFiles(files, sortConfig, filterOptions);
+};

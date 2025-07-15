@@ -4,7 +4,7 @@
  */
 
 import { Box, Text } from "ink";
-import React, { useMemo } from "react";
+import React, { useDeferredValue, useMemo } from "react";
 import type { FileItem } from "../types/index.js";
 import {
 	formatDate,
@@ -72,68 +72,74 @@ FileItemComponent.displayName = "FileItemComponent";
  */
 export const FileList: React.FC<FileListProps> = React.memo(
 	({ files, selectedIndex, terminalWidth, terminalHeight }) => {
+		// Defer non-critical calculations
+		const deferredFiles = useDeferredValue(files);
+		const deferredTerminalWidth = useDeferredValue(terminalWidth);
+		const deferredTerminalHeight = useDeferredValue(terminalHeight);
+
 		// Memoize constants to prevent recalculation
-		const maxVisible = useMemo(() => terminalHeight - 4, [terminalHeight]);
+		const maxVisible = useMemo(
+			() => deferredTerminalHeight - 4,
+			[deferredTerminalHeight],
+		);
 		const halfMaxVisible = useMemo(
 			() => Math.floor(maxVisible / 2),
 			[maxVisible],
 		);
 
-		// Calculate visible range for virtual scrolling
-		const visibleRange = useMemo(() => {
-			const start = Math.max(0, selectedIndex - halfMaxVisible);
-			const end = Math.min(files.length, start + maxVisible);
+		// Calculate visible range for virtual scrolling (using primitive values)
+		const visibleStart = useMemo(() => {
+			return Math.max(0, selectedIndex - halfMaxVisible);
+		}, [selectedIndex, halfMaxVisible]);
 
-			return { start, end };
-		}, [selectedIndex, halfMaxVisible, maxVisible, files.length]);
+		const visibleEnd = useMemo(() => {
+			return Math.min(deferredFiles.length, visibleStart + maxVisible);
+		}, [deferredFiles.length, visibleStart, maxVisible]);
 
-		// Calculate column widths
-		const columnWidths = useMemo(() => {
+		// Calculate column widths (using primitive value)
+		const nameWidth = useMemo(() => {
 			const iconWidth = 3;
 			const sizeWidth = 8;
 			const dateWidth = 12;
 			const padding = 4; // Spaces between columns
-			const nameWidth = Math.max(
+			return Math.max(
 				20,
-				terminalWidth - iconWidth - sizeWidth - dateWidth - padding,
+				deferredTerminalWidth - iconWidth - sizeWidth - dateWidth - padding,
 			);
-
-			return { nameWidth };
-		}, [terminalWidth]);
+		}, [deferredTerminalWidth]);
 
 		// Get visible files
 		const visibleFiles = useMemo(() => {
-			return files.slice(visibleRange.start, visibleRange.end);
-		}, [files, visibleRange]);
+			return deferredFiles.slice(visibleStart, visibleEnd);
+		}, [deferredFiles, visibleStart, visibleEnd]);
 
 		return (
 			<Box flexDirection="column">
 				{/* Header */}
 				<Box>
-					<Text bold>📁 Files ({files.length})</Text>
+					<Text bold>📁 Files ({deferredFiles.length})</Text>
 				</Box>
 
 				{/* File list */}
 				<Box flexDirection="column">
 					{visibleFiles.map((file, index) => {
-						const actualIndex = visibleRange.start + index;
+						const actualIndex = visibleStart + index;
 						return (
 							<FileItemComponent
 								key={file.path}
 								file={file}
 								isSelected={actualIndex === selectedIndex}
-								nameWidth={columnWidths.nameWidth}
+								nameWidth={nameWidth}
 							/>
 						);
 					})}
 				</Box>
 
 				{/* Scroll indicator */}
-				{files.length > visibleFiles.length && (
+				{deferredFiles.length > visibleFiles.length && (
 					<Box>
 						<Text dimColor>
-							Showing {visibleRange.start + 1}-{visibleRange.end} of{" "}
-							{files.length}
+							Showing {visibleStart + 1}-{visibleEnd} of {deferredFiles.length}
 						</Text>
 					</Box>
 				)}
