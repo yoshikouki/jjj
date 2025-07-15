@@ -24,11 +24,18 @@ export const App: React.FC = () => {
 	const navigation = useFileNavigation({ dependencies });
 	const preview = useFilePreview({ dependencies });
 
+	// Memoize stable values to prevent unnecessary re-renders
+	const stableExit = React.useCallback(() => exit(), [exit]);
+	const fileListHeight = React.useMemo(
+		() => terminalSize.height - 1,
+		[terminalSize.height],
+	);
+
 	// Setup keyboard input handling
 	useKeyboardInput({
 		navigation,
 		preview,
-		onExit: exit,
+		onExit: stableExit,
 	});
 
 	// Loading state
@@ -77,7 +84,7 @@ export const App: React.FC = () => {
 					files={navigation.state.files}
 					selectedIndex={navigation.state.selectedIndex}
 					terminalWidth={terminalSize.width}
-					terminalHeight={terminalSize.height - 1} // Account for status bar
+					terminalHeight={fileListHeight}
 				/>
 			</Box>
 

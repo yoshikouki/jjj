@@ -27,24 +27,43 @@ const FileItemComponent: React.FC<{
 	file: FileItem;
 	isSelected: boolean;
 	nameWidth: number;
-}> = React.memo(({ file, isSelected, nameWidth }) => {
-	const icon = getFileIcon(file);
-	const name = truncateFilename(file.name, nameWidth);
-	const size = file.type === "directory" ? "" : formatFileSize(file.size);
-	const date = formatDate(file.modifiedAt);
+}> = React.memo(
+	({ file, isSelected, nameWidth }) => {
+		// Memoize expensive computations
+		const icon = React.useMemo(() => getFileIcon(file), [file]);
+		const name = React.useMemo(
+			() => truncateFilename(file.name, nameWidth),
+			[file.name, nameWidth],
+		);
+		const size = React.useMemo(
+			() => (file.type === "directory" ? "" : formatFileSize(file.size)),
+			[file.type, file.size],
+		);
+		const date = React.useMemo(
+			() => formatDate(file.modifiedAt),
+			[file.modifiedAt],
+		);
 
-	return (
-		<Box>
-			<Text
-				color={isSelected ? "black" : undefined}
-				backgroundColor={isSelected ? "white" : undefined}
-			>
-				{isSelected ? ">" : " "} {icon} {name.padEnd(nameWidth)}{" "}
-				{size.padStart(8)} {date.padStart(12)}
-			</Text>
-		</Box>
-	);
-});
+		return (
+			<Box>
+				<Text
+					color={isSelected ? "black" : undefined}
+					backgroundColor={isSelected ? "white" : undefined}
+				>
+					{isSelected ? ">" : " "} {icon} {name.padEnd(nameWidth)}{" "}
+					{size.padStart(8)} {date.padStart(12)}
+				</Text>
+			</Box>
+		);
+	},
+	(prevProps, nextProps) => {
+		return (
+			prevProps.file === nextProps.file &&
+			prevProps.isSelected === nextProps.isSelected &&
+			prevProps.nameWidth === nextProps.nameWidth
+		);
+	},
+);
 
 FileItemComponent.displayName = "FileItemComponent";
 
@@ -53,14 +72,20 @@ FileItemComponent.displayName = "FileItemComponent";
  */
 export const FileList: React.FC<FileListProps> = React.memo(
 	({ files, selectedIndex, terminalWidth, terminalHeight }) => {
+		// Memoize constants to prevent recalculation
+		const maxVisible = useMemo(() => terminalHeight - 4, [terminalHeight]);
+		const halfMaxVisible = useMemo(
+			() => Math.floor(maxVisible / 2),
+			[maxVisible],
+		);
+
 		// Calculate visible range for virtual scrolling
 		const visibleRange = useMemo(() => {
-			const maxVisible = terminalHeight - 4; // Reserve space for header and footer
-			const start = Math.max(0, selectedIndex - Math.floor(maxVisible / 2));
+			const start = Math.max(0, selectedIndex - halfMaxVisible);
 			const end = Math.min(files.length, start + maxVisible);
 
 			return { start, end };
-		}, [selectedIndex, terminalHeight, files.length]);
+		}, [selectedIndex, halfMaxVisible, maxVisible, files.length]);
 
 		// Calculate column widths
 		const columnWidths = useMemo(() => {
@@ -113,6 +138,15 @@ export const FileList: React.FC<FileListProps> = React.memo(
 					</Box>
 				)}
 			</Box>
+		);
+	},
+	// Custom comparison function to prevent unnecessary re-renders
+	(prevProps, nextProps) => {
+		return (
+			prevProps.files === nextProps.files &&
+			prevProps.selectedIndex === nextProps.selectedIndex &&
+			prevProps.terminalWidth === nextProps.terminalWidth &&
+			prevProps.terminalHeight === nextProps.terminalHeight
 		);
 	},
 );

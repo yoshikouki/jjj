@@ -4,6 +4,7 @@
  */
 
 import { type Key, useInput } from "ink";
+import React from "react";
 import type { UseFileNavigationReturn } from "../../file-navigation/hooks/useFileNavigation.js";
 import { FileType } from "../../file-navigation/types/index.js";
 import type { UseFilePreviewReturn } from "../../file-preview/hooks/useFilePreview.js";
@@ -170,19 +171,52 @@ export const useKeyboardInput = ({
 	preview,
 	onExit,
 }: UseKeyboardInputOptions): void => {
+	// Memoize handlers to prevent recreation on every render
+	const navigationHandler = React.useMemo(
+		() => createNavigationHandler(navigation.actions),
+		[navigation.actions],
+	);
+
+	const appControlHandler = React.useMemo(
+		() => createAppControlHandler(onExit),
+		[onExit],
+	);
+
+	const sortHandler = React.useMemo(
+		() => createSortHandler(navigation.actions),
+		[navigation.actions],
+	);
+
+	const filterHandler = React.useMemo(
+		() =>
+			createFilterHandler(navigation.actions, navigation.state.filterOptions),
+		[navigation.actions, navigation.state.filterOptions],
+	);
+
+	const previewHandler = React.useMemo(
+		() => createPreviewHandler(navigation.state, preview),
+		[navigation.state, preview],
+	);
+
 	// Use different handlers based on preview mode
-	const keyHandler = preview.state.isVisible
-		? composeKeyHandlers(
-				createPreviewHandler(navigation.state, preview),
-				createAppControlHandler(onExit),
-			)
-		: composeKeyHandlers(
-				createPreviewHandler(navigation.state, preview),
-				createNavigationHandler(navigation.actions),
-				createAppControlHandler(onExit),
-				createSortHandler(navigation.actions),
-				createFilterHandler(navigation.actions, navigation.state.filterOptions),
-			);
+	const keyHandler = React.useMemo(() => {
+		return preview.state.isVisible
+			? composeKeyHandlers(previewHandler, appControlHandler)
+			: composeKeyHandlers(
+					previewHandler,
+					navigationHandler,
+					appControlHandler,
+					sortHandler,
+					filterHandler,
+				);
+	}, [
+		preview.state.isVisible,
+		previewHandler,
+		appControlHandler,
+		navigationHandler,
+		sortHandler,
+		filterHandler,
+	]);
 
 	// Use input hook - it will handle TTY checks internally
 	useInput(keyHandler);

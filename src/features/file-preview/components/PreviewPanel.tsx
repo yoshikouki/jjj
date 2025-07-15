@@ -4,7 +4,7 @@
  */
 
 import { Box, Text } from "ink";
-import type React from "react";
+import React from "react";
 import type { PreviewState } from "../types/index.js";
 
 /**
@@ -113,80 +113,110 @@ const getVisibleContent = (
 /**
  * Preview panel component
  */
-export const PreviewPanel: React.FC<PreviewPanelProps> = ({
-	state,
-	width,
-	height,
-}) => {
-	if (!state.isVisible) return null;
+export const PreviewPanel: React.FC<PreviewPanelProps> = React.memo(
+	({ state, width, height }) => {
+		// Memoize layout calculations (must be before early return)
+		const contentHeight = React.useMemo(
+			() => Math.max(1, height - 5),
+			[height],
+		);
+		const contentWidth = React.useMemo(() => width - 4, [width]);
 
-	// Calculate available content height
-	// Header: 1 line (border) + 1-2 lines (content) = ~3 lines
-	// Footer: 1 line (border) + 1 line (content) = 2 lines
-	// Total overhead: ~5 lines
-	const contentHeight = Math.max(1, height - 5);
-	const contentWidth = width - 4;
+		// Memoize visible content calculation
+		const visibleContent = React.useMemo(() => {
+			if (!state.content) return [];
+			return getVisibleContent(
+				state.content,
+				state.scrollOffset,
+				contentHeight,
+				state.displayOptions.showLineNumbers,
+			);
+		}, [
+			state.content,
+			state.scrollOffset,
+			contentHeight,
+			state.displayOptions.showLineNumbers,
+		]);
 
-	return (
-		<Box flexDirection="column" width={width} height={height}>
-			{/* Header */}
-			<Box borderStyle="single" borderColor="cyan" paddingX={1} height={3}>
-				<Box justifyContent="space-between" width="100%">
-					<Box flexDirection="column">
-						<Text color="cyan" bold>
-							📄 {state.file?.name || "Unknown"}
-						</Text>
-						{state.content && (
-							<Text color="gray">
-								{state.content.split("\n").length} lines
-								{state.displayOptions.showLineNumbers
-									? " | Line #: ON"
-									: " | Line #: OFF"}
+		if (!state.isVisible) return null;
+
+		return (
+			<Box flexDirection="column" width={width} height={height}>
+				{/* Header */}
+				<Box borderStyle="single" borderColor="cyan" paddingX={1} height={3}>
+					<Box justifyContent="space-between" width="100%">
+						<Box flexDirection="column">
+							<Text color="cyan" bold>
+								📄 {state.file?.name || "Unknown"}
 							</Text>
+							{state.content && (
+								<Text color="gray">
+									{state.content.split("\n").length} lines
+									{state.displayOptions.showLineNumbers
+										? " | Line #: ON"
+										: " | Line #: OFF"}
+								</Text>
+							)}
+						</Box>
+						{state.file && (
+							<Text color="gray">{formatFileSize(state.file.size)}</Text>
 						)}
 					</Box>
-					{state.file && (
-						<Text color="gray">{formatFileSize(state.file.size)}</Text>
+				</Box>
+
+				{/* Content */}
+				<Box flexDirection="column" height={contentHeight} paddingX={2}>
+					{state.isLoading && (
+						<Box justifyContent="center" alignItems="center" height="100%">
+							<Text color="blue">Loading preview...</Text>
+						</Box>
+					)}
+
+					{state.error && (
+						<Box justifyContent="center" alignItems="center" height="100%">
+							<Text color="red">{state.error}</Text>
+						</Box>
+					)}
+
+					{state.content && !state.isLoading && !state.error && (
+						<Box flexDirection="column" width={contentWidth}>
+							{visibleContent.map((line, index) => (
+								<Text
+									key={`line-${state.scrollOffset + index}`}
+									wrap="truncate"
+								>
+									{line}
+								</Text>
+							))}
+						</Box>
 					)}
 				</Box>
+
+				{/* Footer */}
+				<Box borderStyle="single" borderColor="gray" paddingX={1} height={2}>
+					<Text color="gray">
+						[ESC/Space/Enter/Del] Close [↑↓] Scroll [L] Line numbers [q] Quit
+					</Text>
+				</Box>
 			</Box>
+		);
+	},
+	// Custom comparison function to prevent unnecessary re-renders
+	(prevProps, nextProps) => {
+		const prevState = prevProps.state;
+		const nextState = nextProps.state;
 
-			{/* Content */}
-			<Box flexDirection="column" height={contentHeight} paddingX={2}>
-				{state.isLoading && (
-					<Box justifyContent="center" alignItems="center" height="100%">
-						<Text color="blue">Loading preview...</Text>
-					</Box>
-				)}
-
-				{state.error && (
-					<Box justifyContent="center" alignItems="center" height="100%">
-						<Text color="red">{state.error}</Text>
-					</Box>
-				)}
-
-				{state.content && !state.isLoading && !state.error && (
-					<Box flexDirection="column" width={contentWidth}>
-						{getVisibleContent(
-							state.content,
-							state.scrollOffset,
-							contentHeight,
-							state.displayOptions.showLineNumbers,
-						).map((line, index) => (
-							<Text key={`line-${state.scrollOffset + index}`} wrap="truncate">
-								{line}
-							</Text>
-						))}
-					</Box>
-				)}
-			</Box>
-
-			{/* Footer */}
-			<Box borderStyle="single" borderColor="gray" paddingX={1} height={2}>
-				<Text color="gray">
-					[ESC/Space/Enter/Del] Close [↑↓] Scroll [L] Line numbers [q] Quit
-				</Text>
-			</Box>
-		</Box>
-	);
-};
+		return (
+			prevState.isVisible === nextState.isVisible &&
+			prevState.file === nextState.file &&
+			prevState.content === nextState.content &&
+			prevState.isLoading === nextState.isLoading &&
+			prevState.error === nextState.error &&
+			prevState.scrollOffset === nextState.scrollOffset &&
+			prevState.displayOptions.showLineNumbers ===
+				nextState.displayOptions.showLineNumbers &&
+			prevProps.width === nextProps.width &&
+			prevProps.height === nextProps.height
+		);
+	},
+);

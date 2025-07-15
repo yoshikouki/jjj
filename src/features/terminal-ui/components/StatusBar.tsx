@@ -35,16 +35,28 @@ export const StatusBar: React.FC<StatusBarProps> = React.memo(
 		const { currentPath, files, selectedIndex, sortConfig, filterOptions } =
 			navigationState;
 
-		// Current file info
-		const selectedFile = files[selectedIndex];
-		const fileInfo = selectedFile ? `${selectedFile.name}` : "";
-
-		// Sort and filter info
-		const sortInfo = `Sort: ${sortConfig.key} ${sortConfig.order}`;
-		const filterInfo = filterOptions.showHidden ? "Hidden: ON" : "Hidden: OFF";
-
-		// Stats
-		const stats = `${files.length} items`;
+		// Memoize computed values to prevent recalculation
+		const selectedFile = React.useMemo(
+			() => files[selectedIndex],
+			[files, selectedIndex],
+		);
+		const fileInfo = React.useMemo(
+			() => (selectedFile ? `${selectedFile.name}` : ""),
+			[selectedFile],
+		);
+		const sortInfo = React.useMemo(
+			() => `Sort: ${sortConfig.key} ${sortConfig.order}`,
+			[sortConfig],
+		);
+		const filterInfo = React.useMemo(
+			() => (filterOptions.showHidden ? "Hidden: ON" : "Hidden: OFF"),
+			[filterOptions.showHidden],
+		);
+		const stats = React.useMemo(() => `${files.length} items`, [files.length]);
+		const shortcutsText = React.useMemo(
+			() => getShortcutsText(terminalWidth),
+			[terminalWidth],
+		);
 
 		return (
 			<Box flexDirection="column">
@@ -65,10 +77,26 @@ export const StatusBar: React.FC<StatusBarProps> = React.memo(
 					</Box>
 
 					<Box>
-						<Text color="gray">{getShortcutsText(terminalWidth)}</Text>
+						<Text color="gray">{shortcutsText}</Text>
 					</Box>
 				</Box>
 			</Box>
+		);
+	},
+	// Custom comparison function to prevent unnecessary re-renders
+	(prevProps, nextProps) => {
+		const prevState = prevProps.navigationState;
+		const nextState = nextProps.navigationState;
+
+		return (
+			prevState.currentPath === nextState.currentPath &&
+			prevState.files === nextState.files &&
+			prevState.selectedIndex === nextState.selectedIndex &&
+			prevState.sortConfig.key === nextState.sortConfig.key &&
+			prevState.sortConfig.order === nextState.sortConfig.order &&
+			prevState.filterOptions.showHidden ===
+				nextState.filterOptions.showHidden &&
+			prevProps.terminalWidth === nextProps.terminalWidth
 		);
 	},
 );

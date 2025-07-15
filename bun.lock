@@ -11,15 +11,14 @@
       },
       "devDependencies": {
         "@biomejs/biome": "2.1.0",
-        "@sindresorhus/tsconfig": "^3.0.1",
         "@testing-library/react": "^16.3.0",
         "@testing-library/react-hooks": "^8.0.1",
         "@types/bun": "^1.2.18",
-        "@types/react": "19.1.8",
+        "@types/react": "^19.1.8",
         "ava": "^5.2.0",
         "chalk": "^5.2.0",
         "husky": "^9.1.7",
-        "ink-testing-library": "4.0.0",
+        "ink-testing-library": "^4.0.0",
         "ts-node": "^10.9.1",
         "typescript": "^5.8.3",
       },
@@ -65,8 +64,6 @@
     "@nodelib/fs.stat": ["@nodelib/fs.stat@2.0.5", "", {}, "sha512-RkhPPp2zrqDAQA/2jNhnztcPAlv64XdhIp7a7454A5ovI7Bukxgt7MX7udwAu3zg1DcpPU0rz3VV1SeaqvY4+A=="],
 
     "@nodelib/fs.walk": ["@nodelib/fs.walk@1.2.8", "", { "dependencies": { "@nodelib/fs.scandir": "2.1.5", "fastq": "^1.6.0" } }, "sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg=="],
-
-    "@sindresorhus/tsconfig": ["@sindresorhus/tsconfig@3.0.1", "", {}, "sha512-0/gtPNTY3++0J2BZM5nHHULg0BIMw886gqdn8vWN+Av6bgF5ZU2qIcHubAn+Z9KNvJhO8WFE+9kDOU3n6OcKtA=="],
 
     "@testing-library/dom": ["@testing-library/dom@10.4.0", "", { "dependencies": { "@babel/code-frame": "^7.10.4", "@babel/runtime": "^7.12.5", "@types/aria-query": "^5.0.1", "aria-query": "5.3.0", "chalk": "^4.1.0", "dom-accessibility-api": "^0.5.9", "lz-string": "^1.5.0", "pretty-format": "^27.0.2" } }, "sha512-pemlzrSESWbdAloYml3bAJMEfNh1Z7EduzqPKprCH5S341frlpYnUEW0H72dLxa6IsYr+mPno20GiSm+h9dEdQ=="],
 

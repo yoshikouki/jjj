@@ -1,14 +1,59 @@
 {
-	"extends": "@sindresorhus/tsconfig",
 	"compilerOptions": {
-		"outDir": "dist",
-		"esModuleInterop": true,
-		"allowSyntheticDefaultImports": true,
-		"moduleResolution": "Node16",
-		"noPropertyAccessFromIndexSignature": false,
-		"jsx": "react-jsx"
+		// === Target & Module ===
+		"target": "ES2022", // Modern Node.js (Bun支援)
+		"module": "Node16", // Node.js ESM
+		"moduleResolution": "Node16", // 最新のモジュール解決
+		"moduleDetection": "force", // 強制的にモジュールとして扱う
+		"lib": ["ES2022", "DOM", "DOM.Iterable"], // 最新のJS機能 + DOM (Ink用)
+
+		// === JSX ===
+		"jsx": "react-jsx", // 新しいJSX変換 (React 19対応)
+		"jsxImportSource": "react", // JSX変換のインポート元
+
+		// === Module System ===
+		"esModuleInterop": true, // CommonJS互換性
+		"allowSyntheticDefaultImports": true, // デフォルトインポート許可
+		"resolveJsonModule": true, // JSON import許可 (Bunサポート)
+		"allowImportingTsExtensions": false, // .ts拡張子インポート禁止
+
+		// === Output ===
+		"outDir": "dist", // 出力ディレクトリ
+		"declaration": true, // .d.ts生成
+		"declarationMap": true, // ソースマップ生成
+		"sourceMap": true, // デバッグ用
+		"removeComments": true, // コメント除去
+		"importHelpers": true, // tslib使用
+
+		// === Strict Type Checking ===
+		"strict": true, // 厳格な型チェック
+		"noImplicitAny": true, // 暗黙的any禁止
+		"noImplicitReturns": true, // 明示的return必須
+		"noImplicitOverride": true, // 明示的override必須
+		"noUnusedLocals": true, // 未使用変数検出
+		"noUnusedParameters": true, // 未使用パラメータ検出
+		"noFallthroughCasesInSwitch": true, // switch文のfallthrough禁止
+		"noUncheckedIndexedAccess": true, // インデックスアクセス安全性
+		"noPropertyAccessFromIndexSignature": false, // 環境変数アクセス許可
+
+		// === Additional Checks ===
+		"noEmitOnError": true, // エラー時は出力しない
+		"useDefineForClassFields": true, // クラスフィールド定義
+		"forceConsistentCasingInFileNames": true, // ファイル名大文字小文字統一
+		"exactOptionalPropertyTypes": false, // オプショナルプロパティ厳密化 (実用性重視)
+
+		// === Performance ===
+		"skipLibCheck": true, // ライブラリ型チェックスキップ
+		"incremental": true, // インクリメンタル コンパイル
+		"tsBuildInfoFile": ".tsbuildinfo", // ビルド情報ファイル
+
+		// === Output Formatting ===
+		"pretty": true, // 見やすい出力
+		"newLine": "lf", // Unix改行コード
+		"stripInternal": true // @internal除去
 	},
 	"include": ["src"],
+	"exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.test.tsx"],
 	"ts-node": {
 		"esm": true
 	}
